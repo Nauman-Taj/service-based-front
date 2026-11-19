@@ -3,7 +3,7 @@ export const SITE = {
   tagline: "Trusted local services, booked in minutes.",
   description:
     "Find and book vetted local professionals for cleaning, plumbing, electrical work, painting, gardening, carpentry and more. Fair prices, verified reviews and secure payments.",
-  email: "taluq@quicker.com",
+  email: "taaluq@quicker.com",
   phone: "(061) 078-6011",
   phoneHref: "tel:+92610786011",
   addressLine1: "New Multan Street No. 15, Block S",

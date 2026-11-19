@@ -57,14 +57,14 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
             onClick={onClose}
             className={buttonStyles("outline", "md")}
           >
-            Sign In
+            Sign in
           </Link>
           <Link
             href="/register"
             onClick={onClose}
             className={buttonStyles("primary", "md")}
           >
-            Get Started
+            Get started
           </Link>
         </div>
       </div>

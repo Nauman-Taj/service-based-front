@@ -51,10 +51,10 @@ export default function Navbar() {
             href="/login"
             className="rounded-full px-4 py-2 text-sm font-semibold text-body transition-colors hover:bg-slate-100 hover:text-heading"
           >
-            Sign In
+            Sign in
           </Link>
           <Link href="/register" className={buttonStyles("primary", "sm")}>
-            Get Started
+            Get started
           </Link>
         </div>
 
