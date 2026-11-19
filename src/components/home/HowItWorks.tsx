@@ -45,7 +45,7 @@ export default function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="border-y border-line bg-card py-16 sm:py-20"
+      className="scroll-mt-20 border-y border-line bg-card py-16 sm:py-20"
     >
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
