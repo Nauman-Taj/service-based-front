@@ -14,8 +14,7 @@ const popularSearches = [
   { label: "Painting", href: "/services?q=painting" },
 ];
 
-const heroImage =
-  "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=80";
+const heroImage = "/images/hero/hero-living-room.jpg";
 
 export default function HeroSection() {
   const router = useRouter();
@@ -92,7 +91,7 @@ export default function HeroSection() {
           <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl border border-line bg-card shadow-xl sm:aspect-square lg:aspect-[4/5]">
             <Image
               src={heroImage}
-              alt="A bright, freshly serviced living room"
+              alt="A modern home exterior at dusk"
               fill
               priority
               sizes="(min-width: 1024px) 45vw, 90vw"

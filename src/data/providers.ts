@@ -1,8 +1,5 @@
 import type { Provider } from "@/types/provider";
 
-const avatar = (path: string) =>
-  `https://randomuser.me/api/portraits/${path}.jpg`;
-
 export const providers: Provider[] = [
   {
     id: "prov-1",
@@ -13,7 +10,7 @@ export const providers: Provider[] = [
     reviewCount: 214,
     completedJobs: 320,
     location: "Gulgasht Colony, Multan",
-    avatar: avatar("women/8"),
+    avatar: "/images/providers/ayesha-khan.jpg",
     verified: true,
     bio: "Ten years of residential cleaning across Multan, with a focus on eco-friendly products and move-out details.",
   },
@@ -26,7 +23,7 @@ export const providers: Provider[] = [
     reviewCount: 186,
     completedJobs: 410,
     location: "Cantt, Multan",
-    avatar: avatar("men/10"),
+    avatar: "/images/providers/muhammad-bilal.jpg",
     verified: true,
     bio: "Licensed plumber serving Multan, from dripping taps to full bathroom refits.",
   },
@@ -39,7 +36,7 @@ export const providers: Provider[] = [
     reviewCount: 98,
     completedJobs: 150,
     location: "Bosan Road, Multan",
-    avatar: avatar("men/69"),
+    avatar: "/images/providers/usman-tariq.jpg",
     verified: true,
     bio: "Certified electrician specialising in home safety inspections and smart lighting installs.",
   },
@@ -52,7 +49,7 @@ export const providers: Provider[] = [
     reviewCount: 156,
     completedJobs: 275,
     location: "Shah Rukn-e-Alam, Multan",
-    avatar: avatar("men/7"),
+    avatar: "/images/providers/hamza-iqbal.jpg",
     verified: true,
     bio: "Bespoke shelving, built-in wardrobes and furniture restoration with a craftsman's eye.",
   },
@@ -65,7 +62,7 @@ export const providers: Provider[] = [
     reviewCount: 132,
     completedJobs: 190,
     location: "DHA, Multan",
-    avatar: avatar("women/26"),
+    avatar: "/images/providers/fatima-noor.jpg",
     verified: true,
     bio: "Garden designer and maintenance specialist helping Multan's outdoor spaces thrive year-round.",
   },
@@ -78,7 +75,7 @@ export const providers: Provider[] = [
     reviewCount: 121,
     completedJobs: 205,
     location: "Gulshan Market, Multan",
-    avatar: avatar("men/38"),
+    avatar: "/images/providers/zain-abbas.jpg",
     verified: true,
     bio: "Interior and exterior painter known for clean lines, tidy sites and honest quotes.",
   },

@@ -1,8 +1,5 @@
 import type { Service } from "@/types/service";
 
-const image = (photoId: string) =>
-  `https://images.unsplash.com/${photoId}?auto=format&fit=crop&w=900&q=80`;
-
 export const services: Service[] = [
   {
     id: "svc-1",
@@ -17,7 +14,7 @@ export const services: Service[] = [
     priceUnit: "fixed",
     rating: 4.9,
     reviewCount: 214,
-    image: image("photo-1581578731548-c64695cc6952"),
+    image: "/images/services/deep-home-cleaning.jpg",
     featured: true,
     tags: ["Eco-friendly", "Same-week availability"],
   },
@@ -34,7 +31,7 @@ export const services: Service[] = [
     priceUnit: "hour",
     rating: 4.8,
     reviewCount: 186,
-    image: image("photo-1607472586893-edb57bdc0e39"),
+    image: "/images/services/emergency-plumbing-repair.jpg",
     featured: true,
     tags: ["24/7 call-outs", "Licensed"],
   },
@@ -51,7 +48,7 @@ export const services: Service[] = [
     priceUnit: "fixed",
     rating: 5.0,
     reviewCount: 98,
-    image: image("photo-1621905251918-48416bd8575a"),
+    image: "/images/services/home-electrical-inspection.jpg",
     featured: true,
     tags: ["Certified", "Report included"],
   },
@@ -68,7 +65,7 @@ export const services: Service[] = [
     priceUnit: "room",
     rating: 4.9,
     reviewCount: 121,
-    image: image("photo-1562259949-e8e7689d7828"),
+    image: "/images/services/interior-wall-painting.jpg",
     featured: true,
     tags: ["Premium paint", "Tidy finish"],
   },
@@ -85,7 +82,7 @@ export const services: Service[] = [
     priceUnit: "fixed",
     rating: 4.8,
     reviewCount: 132,
-    image: image("photo-1416879595882-3373a0480b5b"),
+    image: "/images/services/lawn-mowing-garden-care.jpg",
     featured: true,
     tags: ["Weekly plans", "Green waste removal"],
   },
@@ -102,7 +99,7 @@ export const services: Service[] = [
     priceUnit: "hour",
     rating: 4.9,
     reviewCount: 156,
-    image: image("photo-1504148455328-c376907d081c"),
+    image: "/images/services/custom-shelving-installation.jpg",
     featured: true,
     tags: ["Made to measure", "5-year workmanship"],
   },
