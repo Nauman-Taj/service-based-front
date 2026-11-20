@@ -8,12 +8,16 @@ interface ServiceGridProps {
   services: Service[];
   view?: "grid" | "list";
   onClearFilters?: () => void;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }
 
 export default function ServiceGrid({
   services,
   view = "grid",
   onClearFilters,
+  emptyTitle = "No services match your filters",
+  emptyDescription = "Try a different search term, widen the price range, or clear the filters to see every available service.",
 }: ServiceGridProps) {
   if (services.length === 0) {
     return (
@@ -22,11 +26,10 @@ export default function ServiceGrid({
           <SearchX className="h-7 w-7" aria-hidden="true" />
         </span>
         <h2 className="mt-5 text-xl font-semibold text-heading">
-          No services match your filters
+          {emptyTitle}
         </h2>
         <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted">
-          Try a different search term, widen the price range, or clear the
-          filters to see every available service.
+          {emptyDescription}
         </p>
         {onClearFilters ? (
           <Button onClick={onClearFilters} className="mt-6">

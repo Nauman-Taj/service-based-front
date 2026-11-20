@@ -17,6 +17,13 @@ export const services: Service[] = [
     image: "/images/services/deep-home-cleaning.jpg",
     featured: true,
     tags: ["Eco-friendly", "Same-week availability"],
+    includes: [
+      "Kitchens, bathrooms, bedrooms and living areas",
+      "Skirting boards, switches and interior glass",
+      "Inside cabinets and wardrobes on request",
+      "Eco-friendly, pet-safe cleaning products",
+      "Final walkthrough checklist",
+    ],
   },
   {
     id: "svc-2",
@@ -34,6 +41,13 @@ export const services: Service[] = [
     image: "/images/services/emergency-plumbing-repair.jpg",
     featured: true,
     tags: ["24/7 call-outs", "Licensed"],
+    includes: [
+      "Diagnosis and upfront quote before work",
+      "Repair of leaks, bursts and blocked drains",
+      "Replacement of taps, valves and fittings",
+      "Tidy-up and removal of old parts",
+      "30-day workmanship guarantee",
+    ],
   },
   {
     id: "svc-3",
@@ -51,6 +65,13 @@ export const services: Service[] = [
     image: "/images/services/home-electrical-inspection.jpg",
     featured: true,
     tags: ["Certified", "Report included"],
+    includes: [
+      "Full wiring, outlets and breaker panel check",
+      "Earthing and load safety testing",
+      "Written report with photos",
+      "Fixed-price quote for any repairs",
+      "Certified, insured electrician",
+    ],
   },
   {
     id: "svc-4",
@@ -68,6 +89,13 @@ export const services: Service[] = [
     image: "/images/services/interior-wall-painting.jpg",
     featured: true,
     tags: ["Premium paint", "Tidy finish"],
+    includes: [
+      "Surface preparation and crack filling",
+      "Priming plus two coats of premium paint",
+      "Furniture covered and floors protected",
+      "Clean lines around trims and ceilings",
+      "Post-job tidy-up and touch-up pot",
+    ],
   },
   {
     id: "svc-5",
@@ -85,6 +113,13 @@ export const services: Service[] = [
     image: "/images/services/lawn-mowing-garden-care.jpg",
     featured: true,
     tags: ["Weekly plans", "Green waste removal"],
+    includes: [
+      "Mowing, edging and grass trimming",
+      "Weeding and bed maintenance",
+      "Seasonal pruning and shaping",
+      "Green waste collection and disposal",
+      "Weekly or fortnightly visit plans",
+    ],
   },
   {
     id: "svc-6",
@@ -102,6 +137,13 @@ export const services: Service[] = [
     image: "/images/services/custom-shelving-installation.jpg",
     featured: true,
     tags: ["Made to measure", "5-year workmanship"],
+    includes: [
+      "Free measure and design consultation",
+      "Materials supplied or customer-provided",
+      "Precision cutting and fitting",
+      "Anchoring, levelling and finishing",
+      "5-year workmanship warranty",
+    ],
   },
 ];
 
@@ -109,4 +151,10 @@ export const featuredServices = services.filter((service) => service.featured);
 
 export function getServiceById(id: string): Service | undefined {
   return services.find((service) => service.id === id);
+}
+
+export function getServicesByCategory(categorySlug: string): Service[] {
+  return services.filter(
+    (service) => service.categorySlug === categorySlug,
+  );
 }

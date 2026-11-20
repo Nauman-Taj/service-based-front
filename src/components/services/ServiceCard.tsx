@@ -5,13 +5,7 @@ import { ArrowRight, Star } from "lucide-react";
 import type { Service } from "@/types/service";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils/formatCurrency";
-
-const priceUnitLabels: Record<Service["priceUnit"], string> = {
-  hour: "/ hour",
-  fixed: "fixed price",
-  room: "/ room",
-  project: "/ project",
-};
+import { priceUnitLabels } from "@/utils/priceUnit";
 
 interface ServiceCardProps {
   service: Service;

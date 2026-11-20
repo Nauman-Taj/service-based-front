@@ -15,4 +15,5 @@ export interface Service {
   image: string;
   featured: boolean;
   tags: string[];
+  includes: string[];
 }
