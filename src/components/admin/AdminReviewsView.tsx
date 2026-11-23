@@ -11,6 +11,7 @@ import Badge from "@/components/common/Badge";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import DashboardIntro from "@/components/common/DashboardIntro";
 import EmptyState from "@/components/common/EmptyState";
+import { labelClasses } from "@/components/common/Input";
 import Pagination from "@/components/common/Pagination";
 import Select from "@/components/common/Select";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -96,19 +97,25 @@ export default function AdminReviewsView() {
 
       <section className="rounded-2xl border border-line bg-card shadow-sm">
         <div className="grid gap-3 border-b border-line p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_12rem_8rem_10rem]">
-          <div className="relative">
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
-              aria-hidden="true"
-            />
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search reviews or authors"
-              aria-label="Search reviews"
-              className="h-11 w-full rounded-xl border border-line bg-card pl-10 pr-3 text-sm text-heading placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
+          <div>
+            <label htmlFor="admin-review-search" className={labelClasses}>
+              Search
+            </label>
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+                aria-hidden="true"
+              />
+              <input
+                id="admin-review-search"
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search reviews or authors"
+                aria-label="Search reviews"
+                className="h-11 w-full rounded-xl border border-line bg-card pl-10 pr-3 text-sm text-heading placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
           </div>
           <Select
             label="Service"

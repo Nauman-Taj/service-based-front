@@ -210,10 +210,6 @@ export default function CustomerSettingsForm() {
           <Button type="submit" disabled={saving}>
             {saving ? "Saving…" : "Save preferences"}
           </Button>
-          <span className="inline-flex items-center gap-1.5 text-xs text-muted">
-            <Globe className="h-3.5 w-3.5" aria-hidden="true" />
-            Stored in this browser
-          </span>
         </div>
       </form>
 
@@ -266,12 +262,6 @@ export default function CustomerSettingsForm() {
           </div>
         </div>
       </section>
-
-      <p className="flex items-center gap-2 text-xs text-muted">
-        <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
-        Preferences are saved locally and will be ready when you sign in again
-        from this browser.
-      </p>
     </div>
   );
 }

@@ -72,6 +72,9 @@ export default function LoginForm() {
           ? error.message
           : "Something went wrong. Please try again.",
       );
+    } finally {
+      // Always release the button. If navigation is delayed, the user should
+      // see the normal Sign in state instead of a permanent spinner.
       setSubmitting(false);
     }
   }

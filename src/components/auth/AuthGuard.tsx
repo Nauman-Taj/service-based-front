@@ -32,56 +32,65 @@ export default function AuthGuard({ roles, children }: AuthGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
 
+  const authorized =
+    status === "authenticated" && !!user && roles.includes(user.role);
+  const wrongRole = status === "authenticated" && !!user && !authorized;
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
     }
   }, [status, router, pathname]);
 
-  if (status === "loading" || status === "unauthenticated") {
-    return (
-      <LoadingSpinner
-        className="min-h-screen"
-        label="Checking your session…"
-      />
-    );
-  }
+  return (
+    <>
+      {/*
+       * Keep the protected segment mounted even while the session is unknown.
+       * Hiding it (instead of returning early) lets Next.js validate instant
+       * navigation, while `hidden` prevents any protected UI from flashing.
+       */}
+      <div hidden={!authorized} aria-hidden={!authorized}>
+        {children}
+      </div>
 
-  if (!user || !roles.includes(user.role)) {
-    return (
-      <section className="mx-auto flex w-full max-w-lg flex-col items-center px-4 py-24 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-          <ShieldAlert className="h-7 w-7" aria-hidden="true" />
-        </span>
-        <h1 className="mt-6 text-2xl font-bold text-heading">
-          Access denied
-        </h1>
-        <p className="mt-3 text-sm leading-relaxed text-muted">
-          You are signed in as{" "}
-          <span className="font-semibold text-heading">{user?.name}</span> (
-          {user ? roleLabel(user.role) : "unknown"}). This area is only
-          available to {roles.map(roleLabel).join(" / ")}.
-        </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          {user ? (
-            <ButtonLink href={roleHomePath(user.role)}>
-              Go to my dashboard
+      {status === "loading" || status === "unauthenticated" ? (
+        <LoadingSpinner
+          className="min-h-screen"
+          label="Checking your session…"
+        />
+      ) : null}
+
+      {wrongRole ? (
+        <section className="mx-auto flex w-full max-w-lg flex-col items-center px-4 py-24 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+            <ShieldAlert className="h-7 w-7" aria-hidden="true" />
+          </span>
+          <h1 className="mt-6 text-2xl font-bold text-heading">Access denied</h1>
+          <p className="mt-3 text-sm leading-relaxed text-muted">
+            You are signed in as{" "}
+            <span className="font-semibold text-heading">{user?.name}</span> (
+            {user ? roleLabel(user.role) : "unknown"}). This area is only
+            available to {roles.map(roleLabel).join(" / ")}.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            {user ? (
+              <ButtonLink href={roleHomePath(user.role)}>
+                Go to my dashboard
+              </ButtonLink>
+            ) : null}
+            <ButtonLink href="/" variant="outline">
+              Back to homepage
             </ButtonLink>
-          ) : null}
-          <ButtonLink href="/" variant="outline">
-            Back to homepage
-          </ButtonLink>
-          <button
-            type="button"
-            onClick={() => void logout()}
-            className="text-sm font-medium text-muted underline-offset-4 transition-colors hover:text-heading hover:underline"
-          >
-            Sign out
-          </button>
-        </div>
-      </section>
-    );
-  }
-
-  return <>{children}</>;
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="text-sm font-medium text-muted underline-offset-4 transition-colors hover:text-heading hover:underline"
+            >
+              Sign out
+            </button>
+          </div>
+        </section>
+      ) : null}
+    </>
+  );
 }

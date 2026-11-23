@@ -187,8 +187,7 @@ export default function AdminSettingsForm() {
           <div className="rounded-2xl border border-line bg-card p-5 shadow-sm">
             <h3 className="text-sm font-bold text-heading">Account session</h3>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              Signed in as {user?.email ?? "an administrator"}. Signing out
-              clears the local session for this browser.
+              Signed in as {user?.email ?? "an administrator"}.
             </p>
             <Button
               variant="outline"

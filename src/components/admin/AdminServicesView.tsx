@@ -7,6 +7,7 @@ import { useAdminServiceOverrides } from "@/components/admin/admin-service-overr
 import ServicesTable from "@/components/admin/ServicesTable";
 import Button, { ButtonLink } from "@/components/common/Button";
 import DashboardIntro from "@/components/common/DashboardIntro";
+import { labelClasses } from "@/components/common/Input";
 import EmptyState from "@/components/common/EmptyState";
 import Pagination from "@/components/common/Pagination";
 import Select from "@/components/common/Select";
@@ -84,19 +85,25 @@ export default function AdminServicesView() {
 
       <section className="rounded-2xl border border-line bg-card shadow-sm">
         <div className="grid gap-3 border-b border-line p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_12rem_12rem]">
-          <div className="relative">
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
-              aria-hidden="true"
-            />
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search services or providers"
-              aria-label="Search services"
-              className="h-11 w-full rounded-xl border border-line bg-card pl-10 pr-3 text-sm text-heading placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
+          <div>
+            <label htmlFor="admin-service-search" className={labelClasses}>
+              Search
+            </label>
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+                aria-hidden="true"
+              />
+              <input
+                id="admin-service-search"
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search services or providers"
+                aria-label="Search services"
+                className="h-11 w-full rounded-xl border border-line bg-card pl-10 pr-3 text-sm text-heading placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
           </div>
           <Select
             label="Category"

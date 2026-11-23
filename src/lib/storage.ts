@@ -4,13 +4,20 @@
  * All auth persistence goes through this module so that moving the session
  * to httpOnly cookies (when the NestJS backend lands) only touches this file
  * and `hooks/useAuth.ts`.
+ *
+ * The active session is intentionally kept in `sessionStorage`, which is
+ * isolated per browser tab. `localStorage` only stores the remembered default
+ * for fresh tabs, so signing in or out in one tab cannot replace or clear the
+ * session already running in another tab.
  */
 
 import type { AuthSession } from "@/types/user";
 
 export const STORAGE_KEYS = {
-  /** Active session (localStorage when "Remember me", sessionStorage otherwise). */
+  /** Active per-tab session. */
   session: "quicker:auth-session",
+  /** Remembered session copied into new tabs on first load. */
+  rememberedSession: "quicker:auth-remembered-session",
   /** Registered accounts + password overrides for demo accounts. */
   users: "quicker:auth-users",
 } as const;
@@ -54,31 +61,55 @@ export function removeKey(key: string, area: Storage | null): void {
   }
 }
 
-/** Session storage wins so a non-remembered tab session takes precedence. */
+/**
+ * Returns the session for this tab only. A fresh tab adopts the remembered
+ * session once, then keeps its own copy in sessionStorage.
+ */
 export function readSession(): AuthSession | null {
   if (!isBrowser()) {
     return null;
   }
-  return (
-    readJson<AuthSession>(STORAGE_KEYS.session, window.sessionStorage) ??
-    readJson<AuthSession>(STORAGE_KEYS.session, window.localStorage)
+
+  const tabSession = readJson<AuthSession>(
+    STORAGE_KEYS.session,
+    window.sessionStorage,
   );
+  if (tabSession) {
+    return tabSession;
+  }
+
+  const remembered = readJson<AuthSession>(
+    STORAGE_KEYS.rememberedSession,
+    window.localStorage,
+  );
+  if (remembered) {
+    writeJson(STORAGE_KEYS.session, remembered, window.sessionStorage);
+    return remembered;
+  }
+
+  return null;
 }
 
 export function writeSession(session: AuthSession): void {
   if (!isBrowser()) {
     return;
   }
-  const area = session.remember ? window.localStorage : window.sessionStorage;
-  const other = session.remember ? window.sessionStorage : window.localStorage;
-  writeJson(STORAGE_KEYS.session, session, area);
-  removeKey(STORAGE_KEYS.session, other);
+
+  // Always set the current tab's session. Other tabs keep their own copy.
+  writeJson(STORAGE_KEYS.session, session, window.sessionStorage);
+
+  if (session.remember) {
+    writeJson(STORAGE_KEYS.rememberedSession, session, window.localStorage);
+  } else {
+    removeKey(STORAGE_KEYS.rememberedSession, window.localStorage);
+  }
 }
 
+/** Signs out this tab and clears the remembered default for future tabs. */
 export function clearSession(): void {
   if (!isBrowser()) {
     return;
   }
-  removeKey(STORAGE_KEYS.session, window.localStorage);
   removeKey(STORAGE_KEYS.session, window.sessionStorage);
+  removeKey(STORAGE_KEYS.rememberedSession, window.localStorage);
 }

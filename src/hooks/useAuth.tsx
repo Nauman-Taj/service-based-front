@@ -21,12 +21,7 @@ import {
 } from "react";
 
 import { authApi, isTokenExpired } from "@/lib/mock-auth";
-import {
-  clearSession,
-  readSession,
-  STORAGE_KEYS,
-  writeSession,
-} from "@/lib/storage";
+import { clearSession, readSession, writeSession } from "@/lib/storage";
 import type {
   AuthSession,
   LoginInput,
@@ -85,20 +80,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Hydrating the session from localStorage on mount is a sync with an
-    // external system (the persisted session), which is exactly what effects
-    // are for; the rule cannot see past the async helper's synchronous path.
+    // Hydrating the tab-local session on mount is a sync with an external
+    // system (Web Storage), which is exactly what effects are for; the rule
+    // cannot see past the async helper's synchronous path.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void hydrate();
 
-    // Keep tabs in sync (sign-in/sign-out in another tab).
-    function onStorage(event: StorageEvent) {
-      if (event.key === STORAGE_KEYS.session || event.key === null) {
-        void hydrate();
-      }
-    }
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    // Do not listen for cross-tab storage events here. Each tab owns its
+    // session, so signing in or out elsewhere must not replace this tab's user.
   }, [hydrate]);
 
   const login = useCallback(

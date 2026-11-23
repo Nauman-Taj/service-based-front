@@ -267,15 +267,6 @@ export default function CustomerProfileForm() {
             Account settings
           </ButtonLink>
         </section>
-
-        <section className="rounded-2xl border border-line bg-card p-5 shadow-sm">
-          <h3 className="text-sm font-bold text-heading">Why add these details</h3>
-          <p className="mt-2 text-sm leading-relaxed text-muted">
-            Your name, location and bio help providers understand who they are
-            meeting. These details stay in this browser until you choose to
-            update them.
-          </p>
-        </section>
       </aside>
     </div>
   );
