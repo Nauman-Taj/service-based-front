@@ -34,10 +34,10 @@ export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 interface AuthContextValue {
   user: User | null;
   status: AuthStatus;
-  /** Signs in and persists the session. Returns the user for role redirects. */
-  login: (input: LoginInput, remember?: boolean) => Promise<User>;
-  /** Registers, signs in and persists the session. */
-  register: (input: RegisterInput, remember?: boolean) => Promise<User>;
+  /** Signs in and persists the session for this tab only. */
+  login: (input: LoginInput) => Promise<User>;
+  /** Registers, signs in and persists the session for this tab only. */
+  register: (input: RegisterInput) => Promise<User>;
   logout: () => Promise<void>;
   /** Valid access token for API calls, refreshing first when expired. */
   getAccessToken: () => Promise<string | null>;
@@ -91,9 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [hydrate]);
 
   const login = useCallback(
-    async (input: LoginInput, remember = true): Promise<User> => {
+    async (input: LoginInput): Promise<User> => {
       const response = await authApi.login(input);
-      writeSession({ ...response, remember });
+      writeSession(response);
       setUser(response.user);
       setStatus("authenticated");
       return response.user;
@@ -102,9 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const register = useCallback(
-    async (input: RegisterInput, remember = true): Promise<User> => {
+    async (input: RegisterInput): Promise<User> => {
       const response = await authApi.register(input);
-      writeSession({ ...response, remember });
+      writeSession(response);
       setUser(response.user);
       setStatus("authenticated");
       return response.user;

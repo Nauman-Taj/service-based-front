@@ -64,10 +64,10 @@ export default function LoginForm() {
     setSubmitting(true);
     setBanner(null);
     try {
-      const signedIn = await login(
-        { email: values.email.trim(), password: values.password },
-        true,
-      );
+      const signedIn = await login({
+        email: values.email.trim(),
+        password: values.password,
+      });
       router.replace(
         safeRedirectForRole(requestedRedirect, signedIn.role) ??
           roleHomePath(signedIn.role),
@@ -129,7 +129,6 @@ export default function LoginForm() {
           <label className="flex cursor-not-allowed items-center gap-2 text-sm text-muted">
             <input
               type="checkbox"
-              checked
               disabled
               aria-disabled="true"
               className="h-4 w-4 rounded border-line accent-[#0d9488] opacity-70"

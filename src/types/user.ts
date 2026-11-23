@@ -41,11 +41,8 @@ export interface AuthResponse {
   tokens: AuthTokens;
 }
 
-/** Persisted session (local/session storage for now; httpOnly cookies later). */
-export interface AuthSession extends AuthResponse {
-  /** Whether the user chose "Remember me" (localStorage vs sessionStorage). */
-  remember: boolean;
-}
+/** Tab-local session (sessionStorage for now; httpOnly cookies later). */
+export type AuthSession = AuthResponse;
 
 export interface LoginInput {
   email: string;
