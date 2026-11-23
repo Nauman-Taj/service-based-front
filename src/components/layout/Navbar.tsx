@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
-import { buttonStyles } from "@/components/common/Button";
 import Logo from "@/components/common/Logo";
 import MobileMenu from "@/components/layout/MobileMenu";
+import NavAuthActions from "@/components/layout/NavAuthActions";
 import NavLinkItem from "@/components/layout/NavLinkItem";
 import { mainNav } from "@/data/navigation";
 
@@ -16,7 +15,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-card/90 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-line bg-card">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Logo />
 
@@ -33,15 +32,7 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
-          <Link
-            href="/login"
-            className={buttonStyles("ghost", "sm")}
-          >
-            Sign in
-          </Link>
-          <Link href="/register" className={buttonStyles("primary", "sm")}>
-            Get started
-          </Link>
+          <NavAuthActions variant="desktop" />
         </div>
 
         <button

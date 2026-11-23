@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import CustomerBookingsView from "@/components/booking/CustomerBookingsView";
+
+export const metadata: Metadata = {
+  title: "My Bookings",
+  description: "Review and manage all of your Quicker service bookings.",
+};
 
 export default function CustomerBookingsPage() {
-  return (
-    <PagePlaceholder
-      title="My Bookings"
-      description="This module is part of the customer portal and will be implemented in a later phase of the project."
-    />
-  );
+  return <CustomerBookingsView />;
 }

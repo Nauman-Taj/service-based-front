@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import AdminBookingsView from "@/components/booking/AdminBookingsView";
+
+export const metadata: Metadata = {
+  title: "Manage Bookings",
+  description: "Monitor and update every booking across the Quicker marketplace.",
+};
 
 export default function AdminBookingsPage() {
-  return (
-    <PagePlaceholder
-      title="Manage Bookings"
-      description="This module is part of the admin portal and will be implemented in a later phase of the project."
-    />
-  );
+  return <AdminBookingsView />;
 }

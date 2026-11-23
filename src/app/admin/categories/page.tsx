@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import AdminCategoriesView from "@/components/admin/AdminCategoriesView";
+
+export const metadata: Metadata = {
+  title: "Manage Categories",
+  description: "Organise Quicker service categories and category listings.",
+};
 
 export default function AdminCategoriesPage() {
-  return (
-    <PagePlaceholder
-      title="Manage Categories"
-      description="This module is part of the admin portal and will be implemented in a later phase of the project."
-    />
-  );
+  return <AdminCategoriesView />;
 }

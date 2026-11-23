@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import AdminServicesView from "@/components/admin/AdminServicesView";
+
+export const metadata: Metadata = {
+  title: "Manage Services",
+  description: "Manage the Quicker service catalogue, pricing and status.",
+};
 
 export default function AdminServicesPage() {
-  return (
-    <PagePlaceholder
-      title="Manage Services"
-      description="This module is part of the admin portal and will be implemented in a later phase of the project."
-    />
-  );
+  return <AdminServicesView />;
 }

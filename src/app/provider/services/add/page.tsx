@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import ServiceForm from "@/components/forms/ServiceForm";
+
+export const metadata: Metadata = {
+  title: "Add a Service",
+  description: "Create a new service for your Quicker provider listing.",
+};
 
 export default function ProviderAddServicePage() {
-  return (
-    <PagePlaceholder
-      title="Add a Service"
-      description="This module is part of the provider portal and will be implemented in a later phase of the project."
-    />
-  );
+  return <ServiceForm />;
 }

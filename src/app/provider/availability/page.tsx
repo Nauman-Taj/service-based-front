@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import AvailabilityCalendar from "@/components/provider/AvailabilityCalendar";
+
+export const metadata: Metadata = {
+  title: "Provider Availability",
+  description: "Set weekly booking hours and block unavailable dates.",
+};
 
 export default function ProviderAvailabilityPage() {
-  return (
-    <PagePlaceholder
-      title="Availability"
-      description="This module is part of the provider portal and will be implemented in a later phase of the project."
-    />
-  );
+  return <AvailabilityCalendar />;
 }

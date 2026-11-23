@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import DashboardLayout from "@/components/layout/DashboardLayout";
+
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  return <div className="flex flex-1 flex-col">{children}</div>;
+  return <DashboardLayout role="admin">{children}</DashboardLayout>;
 }

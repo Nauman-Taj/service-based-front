@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import AdminReportsView from "@/components/admin/AdminReportsView";
+
+export const metadata: Metadata = {
+  title: "Reports",
+  description: "Booking, revenue and catalogue performance across Quicker.",
+};
 
 export default function AdminReportsPage() {
-  return (
-    <PagePlaceholder
-      title="Reports"
-      description="This module is part of the admin portal and will be implemented in a later phase of the project."
-    />
-  );
+  return <AdminReportsView />;
 }

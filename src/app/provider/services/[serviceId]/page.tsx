@@ -1,10 +1,17 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
 
-export default function ProviderEditServicePage() {
-  return (
-    <PagePlaceholder
-      title="Edit Service"
-      description="This module is part of the provider portal and will be implemented in a later phase of the project."
-    />
-  );
+import ServiceForm from "@/components/forms/ServiceForm";
+
+export const metadata: Metadata = {
+  title: "Edit Service",
+  description: "Update the details of a service on your Quicker provider listing.",
+};
+
+export default async function ProviderEditServicePage({
+  params,
+}: {
+  params: Promise<{ serviceId: string }>;
+}) {
+  const { serviceId } = await params;
+  return <ServiceForm serviceId={serviceId} />;
 }

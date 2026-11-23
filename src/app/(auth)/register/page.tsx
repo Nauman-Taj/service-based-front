@@ -1,10 +1,13 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import RegisterForm from "@/components/auth/RegisterForm";
+
+export const metadata: Metadata = {
+  title: "Create an Account",
+  description:
+    "Join Quicker as a customer to book vetted local services, or as a provider to grow your service business.",
+};
 
 export default function RegisterPage() {
-  return (
-    <PagePlaceholder
-      title="Create an Account"
-      description="Sign up as a customer or join as a service provider. Registration opens in the account phase."
-    />
-  );
+  return <RegisterForm />;
 }

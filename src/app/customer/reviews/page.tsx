@@ -1,10 +1,21 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import DashboardIntro from "@/components/common/DashboardIntro";
+import CustomerReviews from "@/components/customer/CustomerReviews";
+
+export const metadata: Metadata = {
+  title: "My Reviews",
+  description: "Read and manage the reviews you have shared on Quicker.",
+};
 
 export default function CustomerReviewsPage() {
   return (
-    <PagePlaceholder
-      title="My Reviews"
-      description="This module is part of the customer portal and will be implemented in a later phase of the project."
-    />
+    <div className="space-y-6">
+      <DashboardIntro
+        title="My Reviews"
+        description="Share feedback on completed work and keep your reviews up to date."
+      />
+      <CustomerReviews />
+    </div>
   );
 }

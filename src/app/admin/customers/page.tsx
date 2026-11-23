@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import AdminCustomersView from "@/components/admin/AdminCustomersView";
+
+export const metadata: Metadata = {
+  title: "Manage Customers",
+  description: "Browse customers, booking activity and account status.",
+};
 
 export default function AdminCustomersPage() {
-  return (
-    <PagePlaceholder
-      title="Manage Customers"
-      description="This module is part of the admin portal and will be implemented in a later phase of the project."
-    />
-  );
+  return <AdminCustomersView />;
 }

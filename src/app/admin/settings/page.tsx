@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import AdminSettingsForm from "@/components/admin/AdminSettingsForm";
+
+export const metadata: Metadata = {
+  title: "Platform Settings",
+  description: "Manage local administrator preferences and session settings.",
+};
 
 export default function AdminSettingsPage() {
-  return (
-    <PagePlaceholder
-      title="Platform Settings"
-      description="This module is part of the admin portal and will be implemented in a later phase of the project."
-    />
-  );
+  return <AdminSettingsForm />;
 }

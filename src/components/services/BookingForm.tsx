@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
+import Link from "next/link";
 import { CalendarDays, CheckCircle2 } from "lucide-react";
 
-import Button from "@/components/common/Button";
+import Button, { ButtonLink } from "@/components/common/Button";
+import { useAuth } from "@/hooks/useAuth";
+import { createBooking } from "@/lib/booking-store";
 import type { Service } from "@/types/service";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { priceUnitLabels } from "@/utils/priceUnit";
@@ -16,8 +19,6 @@ const TIME_SLOTS = [
   "16:00 – 18:00",
   "18:00 – 20:00",
 ];
-
-const STORAGE_KEY = "quicker:service-requests";
 
 interface BookingFormProps {
   service: Service;
@@ -83,9 +84,11 @@ function validate(values: FormValues): FormErrors {
 }
 
 export default function BookingForm({ service }: BookingFormProps) {
+  const { user } = useAuth();
   const [values, setValues] = useState<FormValues>(initialValues);
   const [errors, setErrors] = useState<FormErrors>({});
   const [reference, setReference] = useState<string | null>(null);
+  const [bookingId, setBookingId] = useState<string | null>(null);
 
   function update(
     field: keyof FormValues,
@@ -110,32 +113,25 @@ export default function BookingForm({ service }: BookingFormProps) {
       return;
     }
 
-    const code = `QK-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const booking = createBooking({
+      serviceId: service.id,
+      customerId: user?.role === "customer" ? user.id : "guest",
+      customerName: values.name.trim(),
+      date: values.date,
+      timeSlot: values.time,
+      address: values.address.trim(),
+      notes: values.notes.trim() || undefined,
+    });
 
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      const requests: unknown[] = stored ? JSON.parse(stored) : [];
-      requests.push({
-        reference: code,
-        serviceId: service.id,
-        serviceTitle: service.title,
-        providerName: service.providerName,
-        price: service.price,
-        ...values,
-        createdAt: new Date().toISOString(),
-      });
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
-    } catch {
-      // Local storage may be unavailable; the confirmation still renders.
-    }
-
-    setReference(code);
+    setReference(booking.reference);
+    setBookingId(booking.id);
   }
 
   function handleReset() {
     setValues(initialValues);
     setErrors({});
     setReference(null);
+    setBookingId(null);
   }
 
   if (reference) {
@@ -155,7 +151,14 @@ export default function BookingForm({ service }: BookingFormProps) {
         <dl className="mt-5 space-y-3 rounded-xl border border-line bg-background p-4 text-sm">
           <div className="flex items-center justify-between gap-3">
             <dt className="text-muted">Reference</dt>
-            <dd className="font-semibold text-heading">{reference}</dd>
+            <dd>
+              <Link
+                href={`/booking/confirmation?reference=${encodeURIComponent(reference)}`}
+                className="font-semibold text-primary hover:text-primary-hover"
+              >
+                {reference}
+              </Link>
+            </dd>
           </div>
           <div className="flex items-center justify-between gap-3">
             <dt className="text-muted">Service</dt>
@@ -177,7 +180,16 @@ export default function BookingForm({ service }: BookingFormProps) {
           </div>
         </dl>
 
-        <Button variant="outline" className="mt-5 w-full" onClick={handleReset}>
+        {bookingId ? (
+          <ButtonLink
+            href={`/booking/${bookingId}`}
+            variant="outline"
+            className="mt-5 w-full"
+          >
+            View booking details
+          </ButtonLink>
+        ) : null}
+        <Button variant="ghost" className="mt-2 w-full" onClick={handleReset}>
           Make another request
         </Button>
       </div>

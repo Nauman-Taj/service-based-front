@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import AdminProvidersView from "@/components/admin/AdminProvidersView";
+
+export const metadata: Metadata = {
+  title: "Manage Providers",
+  description: "Review provider details, performance and marketplace access.",
+};
 
 export default function AdminProvidersPage() {
-  return (
-    <PagePlaceholder
-      title="Manage Providers"
-      description="This module is part of the admin portal and will be implemented in a later phase of the project."
-    />
-  );
+  return <AdminProvidersView />;
 }

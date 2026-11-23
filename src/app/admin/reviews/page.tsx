@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import AdminReviewsView from "@/components/admin/AdminReviewsView";
+
+export const metadata: Metadata = {
+  title: "Reviews Moderation",
+  description: "Approve, reject and remove marketplace reviews.",
+};
 
 export default function AdminReviewsPage() {
-  return (
-    <PagePlaceholder
-      title="Reviews Moderation"
-      description="This module is part of the admin portal and will be implemented in a later phase of the project."
-    />
-  );
+  return <AdminReviewsView />;
 }

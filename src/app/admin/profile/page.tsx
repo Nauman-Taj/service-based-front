@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import AdminProfileForm from "@/components/admin/AdminProfileForm";
+
+export const metadata: Metadata = {
+  title: "My Profile",
+  description: "Manage the administrator profile for Quicker.",
+};
 
 export default function AdminProfilePage() {
-  return (
-    <PagePlaceholder
-      title="Admin Profile"
-      description="This module is part of the admin portal and will be implemented in a later phase of the project."
-    />
-  );
+  return <AdminProfileForm />;
 }

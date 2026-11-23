@@ -1,10 +1,21 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import DashboardIntro from "@/components/common/DashboardIntro";
+import FavoritesGrid from "@/components/customer/FavoritesGrid";
+
+export const metadata: Metadata = {
+  title: "Saved Services",
+  description: "Find and manage the services you have saved on Quicker.",
+};
 
 export default function CustomerFavoritesPage() {
   return (
-    <PagePlaceholder
-      title="Saved Services"
-      description="This module is part of the customer portal and will be implemented in a later phase of the project."
-    />
+    <div className="space-y-6">
+      <DashboardIntro
+        title="Saved Services"
+        description="Keep your favorite services close and add more from the marketplace."
+      />
+      <FavoritesGrid />
+    </div>
   );
 }

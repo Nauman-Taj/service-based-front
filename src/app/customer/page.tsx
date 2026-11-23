@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import CustomerOverview from "@/components/customer/CustomerOverview";
+
+export const metadata: Metadata = {
+  title: "Customer Dashboard",
+  description: "Manage your bookings, favorites and account on Quicker.",
+};
 
 export default function CustomerDashboardPage() {
-  return (
-    <PagePlaceholder
-      title="Customer Dashboard"
-      description="An overview of bookings, messages and saved services is part of the customer portal phase."
-    />
-  );
+  return <CustomerOverview />;
 }

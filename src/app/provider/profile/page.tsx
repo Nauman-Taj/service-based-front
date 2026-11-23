@@ -1,10 +1,12 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+
+import ProviderProfileForm from "@/components/provider/ProviderProfileForm";
+
+export const metadata: Metadata = {
+  title: "Provider Profile",
+  description: "Manage your public provider profile on Quicker.",
+};
 
 export default function ProviderProfilePage() {
-  return (
-    <PagePlaceholder
-      title="Provider Profile"
-      description="This module is part of the provider portal and will be implemented in a later phase of the project."
-    />
-  );
+  return <ProviderProfileForm />;
 }

@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { buttonStyles } from "@/components/common/Button";
 import NavLinkItem from "@/components/layout/NavLinkItem";
+import NavAuthActions from "@/components/layout/NavAuthActions";
 import { mainNav } from "@/data/navigation";
 
 interface MobileMenuProps {
@@ -36,20 +35,7 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
         </nav>
 
         <div className="mt-4 flex flex-col gap-2 border-t border-line pt-4">
-          <Link
-            href="/login"
-            onClick={onClose}
-            className={buttonStyles("ghost", "md", "w-full")}
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/register"
-            onClick={onClose}
-            className={buttonStyles("primary", "md", "w-full")}
-          >
-            Get started
-          </Link>
+          <NavAuthActions variant="mobile" onNavigate={onClose} />
         </div>
       </div>
     </div>

@@ -1,13 +1,34 @@
-import PagePlaceholder from "@/components/common/PagePlaceholder";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+
+import PublicBookingDetail from "@/components/booking/PublicBookingDetail";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 import SiteShell from "@/components/layout/SiteShell";
 
-export default function BookingDetailPage() {
+export const metadata: Metadata = {
+  title: "Booking Details",
+  description: "Track the status and full details of a Quicker booking request.",
+};
+
+async function RouteContent({
+  params,
+}: {
+  params: Promise<{ bookingId: string }>;
+}) {
+  const { bookingId } = await params;
+  return <PublicBookingDetail bookingId={bookingId} />;
+}
+
+export default function BookingDetailPage({
+  params,
+}: {
+  params: Promise<{ bookingId: string }>;
+}) {
   return (
     <SiteShell>
-      <PagePlaceholder
-        title="Booking Details"
-        description="Track your booking, contact your provider and review the job. Booking management arrives with the customer portal."
-      />
+      <Suspense fallback={<LoadingSpinner className="min-h-[60vh]" />}>
+        <RouteContent params={params} />
+      </Suspense>
     </SiteShell>
   );
 }
