@@ -10,7 +10,7 @@ import Input from "@/components/common/Input";
 import { useAuth } from "@/hooks/useAuth";
 import { validateEmail, validateRequired } from "@/lib/validations";
 import { AuthError } from "@/types/user";
-import { roleHomePath, safeRedirectPath } from "@/utils/roleHelpers";
+import { roleHomePath, safeRedirectForRole } from "@/utils/roleHelpers";
 
 interface FormValues {
   email: string;
@@ -29,14 +29,17 @@ export default function LoginForm() {
   const [banner, setBanner] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const redirectTarget = safeRedirectPath(searchParams.get("redirect"));
+  const requestedRedirect = searchParams.get("redirect");
 
-  // Already signed in? Go straight to the dashboard.
+  // Already signed in? Go straight to a dashboard this role can access.
   useEffect(() => {
     if (status === "authenticated" && user) {
-      router.replace(redirectTarget ?? roleHomePath(user.role));
+      router.replace(
+        safeRedirectForRole(requestedRedirect, user.role) ??
+          roleHomePath(user.role),
+      );
     }
-  }, [status, user, router, redirectTarget]);
+  }, [status, user, router, requestedRedirect]);
 
   function update(field: keyof FormValues, value: string) {
     setValues((previous) => ({ ...previous, [field]: value }));
@@ -65,7 +68,10 @@ export default function LoginForm() {
         { email: values.email.trim(), password: values.password },
         true,
       );
-      router.replace(redirectTarget ?? roleHomePath(signedIn.role));
+      router.replace(
+        safeRedirectForRole(requestedRedirect, signedIn.role) ??
+          roleHomePath(signedIn.role),
+      );
     } catch (error) {
       setBanner(
         error instanceof AuthError
