@@ -1,13 +1,5 @@
-import { Loader2 } from "lucide-react";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 export default function Loading() {
-  return (
-    <div className="flex flex-1 items-center justify-center py-24">
-      <Loader2
-        className="h-8 w-8 animate-spin text-primary"
-        aria-hidden="true"
-      />
-      <span className="sr-only">Loading&hellip;</span>
-    </div>
-  );
+  return <LoadingSpinner />;
 }

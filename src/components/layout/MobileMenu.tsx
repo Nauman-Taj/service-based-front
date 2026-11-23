@@ -4,19 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { buttonStyles } from "@/components/common/Button";
+import NavLinkItem from "@/components/layout/NavLinkItem";
 import { mainNav } from "@/data/navigation";
-import { cn } from "@/lib/utils";
 
 interface MobileMenuProps {
   open: boolean;
   onClose: () => void;
-}
-
-function isActive(pathname: string, href: string): boolean {
-  if (href === "/") {
-    return pathname === "/";
-  }
-  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export default function MobileMenu({ open, onClose }: MobileMenuProps) {
@@ -30,39 +23,30 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
     <div id="mobile-menu" className="border-t border-line bg-card md:hidden">
       <div className="mx-auto w-full max-w-7xl px-4 pb-6 pt-4 sm:px-6">
         <nav className="flex flex-col gap-1" aria-label="Mobile">
-          {mainNav.map((link) => {
-            const active = isActive(pathname, link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={onClose}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "rounded-full px-4 py-2.5 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-primary/10 text-primary"
-                    : "text-body hover:bg-slate-100 hover:text-heading",
-                )}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
+          {mainNav.map((link) => (
+            <NavLinkItem
+              key={link.href}
+              href={link.href}
+              label={link.label}
+              pathname={pathname}
+              variant="mobile"
+              onNavigate={onClose}
+            />
+          ))}
         </nav>
 
         <div className="mt-4 flex flex-col gap-2 border-t border-line pt-4">
           <Link
             href="/login"
             onClick={onClose}
-            className={buttonStyles("outline", "md")}
+            className={buttonStyles("ghost", "md", "w-full")}
           >
             Sign in
           </Link>
           <Link
             href="/register"
             onClick={onClose}
-            className={buttonStyles("primary", "md")}
+            className={buttonStyles("primary", "md", "w-full")}
           >
             Get started
           </Link>
