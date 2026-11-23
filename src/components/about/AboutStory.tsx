@@ -21,7 +21,7 @@ export default function AboutStory() {
           </div>
 
           <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line pt-6 text-sm">
-            <span className="font-semibold text-heading">2021</span>
+            <span className="font-semibold text-heading">2023</span>
             <span className="text-muted">Founded in Multan</span>
             <span aria-hidden="true" className="hidden h-1 w-1 rounded-full bg-line sm:block" />
             <span className="font-semibold text-heading">8 categories</span>

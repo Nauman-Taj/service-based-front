@@ -16,7 +16,7 @@ export interface AboutStat {
 }
 
 export const aboutStats: AboutStat[] = [
-  { value: "2021", label: "Founded in Multan" },
+  { value: "2023", label: "Founded in Multan" },
   { value: "8", label: "Service categories" },
   { value: "1,800+", label: "Vetted providers" },
   { value: "2,400+", label: "Bookings completed" },
@@ -45,7 +45,7 @@ export const aboutValues: AboutValue[] = [
     icon: MapPin,
     title: "Local people, local accountability",
     description:
-      "We are rooted in Multan and know the neighbourhoods our providers serve, from Gulgasht to DHA.",
+      "We are rooted in Multan and know the neighbourhoods our providers serve, from New Multan Colony to DHA.",
   },
   {
     icon: HeartHandshake,
@@ -92,8 +92,8 @@ export const aboutStory = {
   eyebrow: "Our story",
   title: "Built in Multan, for Multan",
   paragraphs: [
-    "Finding a reliable plumber should not mean calling five numbers and hoping for the best. Quicker started in 2021 with a simple idea: give homeowners one place to compare trusted local professionals, see upfront prices and book with confidence.",
-    "Today we work with independent tradespeople and small teams across the city — from Gulgasht Colony to DHA — helping them grow their businesses while giving customers a fair, transparent alternative to word-of-mouth guesswork.",
+    "Finding a reliable plumber should not mean calling five numbers and hoping for the best. Quicker started in 2023 with a simple idea: give homeowners one place to compare trusted local professionals, see upfront prices and book with confidence.",
+    "Today we work with independent tradespeople and small teams across the city — from New Multan Colony to DHA — helping them grow their businesses while giving customers a fair, transparent alternative to word-of-mouth guesswork.",
   ],
   promise: {
     title: "Our promise",
