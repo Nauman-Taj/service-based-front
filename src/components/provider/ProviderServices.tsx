@@ -88,7 +88,7 @@ export default function ProviderServices() {
 
       <div className="flex flex-col gap-4 rounded-2xl border border-line bg-card p-4 shadow-sm sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <label htmlFor="provider-service-search" className="sr-only">
+          <label htmlFor="provider-service-search" >
             Search your services
           </label>
           <Search
