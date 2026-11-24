@@ -102,7 +102,7 @@ export default function ProviderServices() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search by name, category or tag"
-            className="h-11 w-full rounded-xl border border-line bg-background pl-10 pr-3 text-sm text-heading placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="h-11 w-full rounded-xl border border-line pl-10 pr-3 text-sm text-heading placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
         <div className="sm:w-52">
