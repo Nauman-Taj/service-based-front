@@ -36,7 +36,7 @@ export default function BookingTable({
 
   return (
     <>
-      <div className="hidden rounded-2xl border border-line bg-card shadow-sm md:block">
+      <div className="hidden overflow-hidden rounded-2xl border border-line bg-card shadow-sm md:block">
         <div className="table-scroll">
           <table
             className={cn(
