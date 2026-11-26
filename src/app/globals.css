@@ -18,9 +18,7 @@
 body {
   background-color: var(--color-background);
   color: var(--color-heading);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  font-variant-numeric: lining-nums tabular-nums;
-  font-feature-settings: "lnum" 1, "tnum" 1;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 /* Tables grow to their natural height; only horizontal overflow scrolls on
