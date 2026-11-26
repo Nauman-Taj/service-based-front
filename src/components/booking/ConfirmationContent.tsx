@@ -8,7 +8,6 @@ import { ButtonLink } from "@/components/common/Button";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import BookingDetailsPanel from "@/components/booking/BookingDetailsPanel";
 import BookingNotFound from "@/components/booking/BookingNotFound";
-import { useBookingsReady } from "@/components/booking/useBookingsReady";
 import { useBookings } from "@/hooks/useBookings";
 
 const nextSteps = [
@@ -21,8 +20,7 @@ const nextSteps = [
 export default function ConfirmationContent() {
   const searchParams = useSearchParams();
   const reference = searchParams.get("reference");
-  const { bookings } = useBookings();
-  const ready = useBookingsReady();
+  const { bookings, loading } = useBookings();
 
   const booking = useMemo(() => {
     if (!reference) {
@@ -32,7 +30,7 @@ export default function ConfirmationContent() {
     return bookings.find((item) => item.reference.toUpperCase() === query) ?? null;
   }, [bookings, reference]);
 
-  if (!ready) {
+  if (loading) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <LoadingSpinner

@@ -2,29 +2,23 @@
 
 import { useMemo, useState } from "react";
 import {
-  CheckCircle2,
   MessageSquareQuote,
   ShieldCheck,
   Star,
-  Trash2,
-  XCircle,
 } from "lucide-react";
 
 import Avatar from "@/components/common/Avatar";
 import Badge from "@/components/common/Badge";
 import Button from "@/components/common/Button";
-import ConfirmDialog from "@/components/common/ConfirmDialog";
 import DashboardIntro from "@/components/common/DashboardIntro";
 import EmptyState from "@/components/common/EmptyState";
 import Pagination from "@/components/common/Pagination";
 import Select from "@/components/common/Select";
 import StarRating from "@/components/common/StarRating";
 import { useManagedProviderServices } from "@/components/provider/provider-service-data";
-import { reviews as publicReviews } from "@/data/reviews";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboardReviews } from "@/hooks/usePortalData";
 import { usePagination } from "@/hooks/usePagination";
-import type { ReviewStatus } from "@/types/dashboard";
 import { formatDate } from "@/utils/formatDate";
 
 interface ReviewItem {
@@ -37,30 +31,13 @@ interface ReviewItem {
   body: string;
   date: string;
   verified: boolean;
-  source: "public" | "local";
-  status?: ReviewStatus;
-}
-
-function statusVariant(status: ReviewStatus): "success" | "gold" | "neutral" {
-  if (status === "published") {
-    return "success";
-  }
-  if (status === "pending") {
-    return "gold";
-  }
-  return "neutral";
 }
 
 export default function ProviderReviews() {
   const { user } = useAuth();
   const { services } = useManagedProviderServices(user?.providerId);
-  const {
-    reviews: localReviews,
-    setReviewStatus,
-    deleteReview,
-  } = useDashboardReviews();
+  const { reviews } = useDashboardReviews();
   const [ratingFilter, setRatingFilter] = useState("all");
-  const [pendingDelete, setPendingDelete] = useState<ReviewItem | null>(null);
 
   const serviceNames = useMemo(
     () => new Map(services.map((service) => [service.id, service.title])),
@@ -72,7 +49,7 @@ export default function ProviderReviews() {
   );
 
   const items = useMemo<ReviewItem[]>(() => {
-    const fromLocal = localReviews
+    return reviews
       .filter(
         (review) =>
           serviceNames.has(review.serviceId) ||
@@ -88,29 +65,9 @@ export default function ProviderReviews() {
         body: review.body,
         date: review.date,
         verified: review.verified,
-        source: "local",
-        status: review.status,
-      }));
-
-    const fromPublic = publicReviews
-      .filter((review) => serviceNames.has(review.serviceId))
-      .map<ReviewItem>((review) => ({
-        id: review.id,
-        serviceName: serviceNames.get(review.serviceId) ?? review.serviceId,
-        author: review.author,
-        location: review.location,
-        rating: review.rating,
-        title: review.title,
-        body: review.body,
-        date: review.date,
-        verified: review.verified,
-        source: "public",
-      }));
-
-    return [...fromLocal, ...fromPublic].sort((a, b) =>
-      b.date.localeCompare(a.date),
-    );
-  }, [localReviews, serviceNames, serviceTitles]);
+      }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [reviews, serviceNames, serviceTitles]);
 
   const average = items.length
     ? items.reduce((sum, review) => sum + review.rating, 0) / items.length
@@ -134,7 +91,7 @@ export default function ProviderReviews() {
     <div className="space-y-8">
       <DashboardIntro
         title="Reviews"
-        description="See what customers say about your services and moderate locally added reviews."
+        description="See what customers say about your services."
       />
 
       {items.length === 0 ? (
@@ -264,56 +221,7 @@ export default function ProviderReviews() {
                               Verified
                             </Badge>
                           ) : null}
-                          {review.source === "local" && review.status ? (
-                            <Badge variant={statusVariant(review.status)}>
-                              {review.status}
-                            </Badge>
-                          ) : null}
                         </div>
-
-                        {review.source === "local" ? (
-                          <div className="flex flex-wrap gap-2">
-                            {review.status !== "published" ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                  setReviewStatus(review.id, "published")
-                                }
-                              >
-                                <CheckCircle2
-                                  className="h-3.5 w-3.5"
-                                  aria-hidden="true"
-                                />
-                                Publish
-                              </Button>
-                            ) : null}
-                            {review.status !== "rejected" ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() =>
-                                  setReviewStatus(review.id, "rejected")
-                                }
-                              >
-                                <XCircle
-                                  className="h-3.5 w-3.5"
-                                  aria-hidden="true"
-                                />
-                                Reject
-                              </Button>
-                            ) : null}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setPendingDelete(review)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                              Delete
-                            </Button>
-                          </div>
-                        ) : null}
                       </div>
                     </article>
                   ))}
@@ -329,25 +237,6 @@ export default function ProviderReviews() {
           </div>
         </div>
       )}
-
-      <ConfirmDialog
-        open={Boolean(pendingDelete)}
-        title="Delete review"
-        description={
-          pendingDelete
-            ? `Remove the review by ${pendingDelete.author} from your portal? This cannot be undone.`
-            : ""
-        }
-        confirmLabel="Delete review"
-        destructive
-        onClose={() => setPendingDelete(null)}
-        onConfirm={() => {
-          if (pendingDelete) {
-            deleteReview(pendingDelete.id);
-          }
-          setPendingDelete(null);
-        }}
-      />
     </div>
   );
 }

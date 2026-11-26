@@ -11,7 +11,6 @@ import BookingStatusActions, {
   type BookingStatusAction,
 } from "@/components/booking/BookingStatusActions";
 import BookingStatusTimeline from "@/components/booking/BookingStatusTimeline";
-import { useBookingsReady } from "@/components/booking/useBookingsReady";
 import type { BookingPerspective } from "@/components/customer/BookingCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookings } from "@/hooks/useBookings";
@@ -99,11 +98,10 @@ export default function DashboardBookingDetail({
   backHref,
 }: DashboardBookingDetailProps) {
   const { user } = useAuth();
-  const { bookings } = useBookings();
-  const ready = useBookingsReady();
+  const { bookings, loading } = useBookings();
   const booking = bookings.find((item) => item.id === bookingId);
 
-  if (!user || !ready) {
+  if (!user || loading) {
     return (
       <LoadingSpinner
         className="min-h-[50vh]"

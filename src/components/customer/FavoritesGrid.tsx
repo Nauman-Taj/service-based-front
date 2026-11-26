@@ -8,7 +8,6 @@ import Button, { ButtonLink } from "@/components/common/Button";
 import EmptyState from "@/components/common/EmptyState";
 import StarRating from "@/components/common/StarRating";
 import { getServiceById, services } from "@/data/services";
-import { useAuth } from "@/hooks/useAuth";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useFavorites } from "@/hooks/usePortalData";
 import { formatCurrency } from "@/utils/formatCurrency";
@@ -16,8 +15,7 @@ import { priceUnitLabels } from "@/utils/priceUnit";
 
 /** Saved services grid with a searchable picker for adding more. */
 export default function FavoritesGrid() {
-  const { user } = useAuth();
-  const { favorites, toggleFavorite, isFavorite } = useFavorites(user?.id);
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 200);
 

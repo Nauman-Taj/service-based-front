@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import {
   ArrowRight,
   CalendarDays,
@@ -15,7 +15,6 @@ import { ButtonLink } from "@/components/common/Button";
 import EmptyState from "@/components/common/EmptyState";
 import Input from "@/components/common/Input";
 import StarRating from "@/components/common/StarRating";
-import { bookings as mockBookings } from "@/data/bookings";
 import { useBookings } from "@/hooks/useBookings";
 import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
@@ -49,20 +48,13 @@ interface BookingLandingProps {
 
 /** Public booking hub: explain the flow, pick a service and track requests. */
 export default function BookingLanding({ services }: BookingLandingProps) {
-  const { bookings } = useBookings();
+  const { bookings, cachedBookings, loading } = useBookings();
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 250);
   const [referenceInput, setReferenceInput] = useState("");
   const [referenceError, setReferenceError] = useState("");
   const [referenceQuery, setReferenceQuery] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    // The local booking store is only readable after hydration.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
 
   const categories = useMemo(
     () =>
@@ -105,10 +97,10 @@ export default function BookingLanding({ services }: BookingLandingProps) {
     return bookings.find((booking) => booking.reference.toUpperCase() === query) ?? null;
   }, [bookings, referenceQuery]);
 
-  const localBookings = useMemo(() => {
-    const demoIds = new Set(mockBookings.map((booking) => booking.id));
-    return bookings.filter((booking) => !demoIds.has(booking.id)).slice(0, 3);
-  }, [bookings]);
+  const localBookings = useMemo(
+    () => cachedBookings.slice(0, 3),
+    [cachedBookings],
+  );
 
   function handleLookup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -377,7 +369,7 @@ export default function BookingLanding({ services }: BookingLandingProps) {
               Recent requests on this browser
             </h3>
             <div className="mt-4 space-y-3">
-              {!mounted ? (
+              {loading ? (
                 <p className="rounded-xl border border-dashed border-line bg-card px-4 py-6 text-sm text-muted">
                   Checking this browser for recent requests...
                 </p>

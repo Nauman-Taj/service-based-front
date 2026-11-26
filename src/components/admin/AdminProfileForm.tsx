@@ -14,15 +14,23 @@ import { roleLabel } from "@/utils/roleHelpers";
 /** Admin profile editor backed by the shared profile store. */
 export default function AdminProfileForm() {
   const { user, status } = useAuth();
-  const { profile, saveProfile } = useUserProfile(user?.id);
+  const { profile, saveProfile, loading, error } = useUserProfile(user?.id);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
-  function handleSave(next: UserProfileRecord) {
-    saveProfile(next);
-    setSaved(true);
+  async function handleSave(next: UserProfileRecord) {
+    try {
+      await saveProfile(next);
+      setSaveError("");
+      setSaved(true);
+    } catch (error) {
+      setSaveError(
+        error instanceof Error ? error.message : "Could not save your profile.",
+      );
+    }
   }
 
-  if (status === "loading") {
+  if (status === "loading" || loading) {
     return (
       <div className="rounded-2xl border border-line bg-card p-8 text-center text-sm text-muted">
         Loading your profile...
@@ -106,6 +114,24 @@ export default function AdminProfileForm() {
             >
               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
               Profile saved successfully.
+            </p>
+          ) : null}
+
+          {saveError ? (
+            <p
+              role="alert"
+              className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+            >
+              {saveError}
+            </p>
+          ) : null}
+
+          {error || saveError ? (
+            <p
+              role="alert"
+              className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+            >
+              {saveError || error}
             </p>
           ) : null}
 

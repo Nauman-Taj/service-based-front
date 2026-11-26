@@ -9,6 +9,7 @@ import Button from "@/components/common/Button";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import DashboardIntro from "@/components/common/DashboardIntro";
 import EmptyState from "@/components/common/EmptyState";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 import Modal from "@/components/common/Modal";
 import Pagination from "@/components/common/Pagination";
 import CategoryForm, {
@@ -17,9 +18,9 @@ import CategoryForm, {
   type CategoryIconName,
 } from "@/components/forms/CategoryForm";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useAdminStatuses } from "@/hooks/usePortalData";
 import { usePagination } from "@/hooks/usePagination";
 import type { Category } from "@/types/category";
+import type { AdminEntityStatus } from "@/types/dashboard";
 
 const SLUG_ICON_FALLBACKS: Record<string, CategoryIconName> = {
   "home-cleaning": "Sparkles",
@@ -39,15 +40,29 @@ function iconNameFor(category: Category): CategoryIconName {
   return match?.value ?? SLUG_ICON_FALLBACKS[category.slug] ?? "Sparkles";
 }
 
-/** Category management with local add/edit/delete and status controls. */
+function describeError(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "We could not update this category. Please try again.";
+}
+
+/** API-backed category management with live service counts and status controls. */
 export default function AdminCategoriesView() {
-  const { categories, saveCategory, deleteCategory } = useAdminCategories();
-  const { statuses, setStatus } = useAdminStatuses();
+  const {
+    categories,
+    statuses,
+    loading,
+    error,
+    saveCategory,
+    deleteCategory,
+    setCategoryStatus,
+  } = useAdminCategories();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Category | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Category | null>(null);
   const [message, setMessage] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
   const query = useDebounce(search, 250).trim().toLowerCase();
 
   const filtered = useMemo(
@@ -64,37 +79,57 @@ export default function AdminCategoriesView() {
 
   function openAdd() {
     setEditing(null);
+    setActionError(null);
     setEditorOpen(true);
   }
 
   function openEdit(category: Category) {
     setEditing(category);
+    setActionError(null);
     setEditorOpen(true);
   }
 
-  function handleSave(values: CategoryFormValues) {
-    saveCategory(values, editing?.id);
-    setEditorOpen(false);
-    setEditing(null);
-    setMessage(
-      editing
-        ? `${values.name} updated in this browser.`
-        : `${values.name} added to this browser.`,
-    );
+  async function handleSave(values: CategoryFormValues) {
+    setActionError(null);
+    try {
+      await saveCategory(values, editing?.id);
+      setEditorOpen(false);
+      setEditing(null);
+      setMessage(
+        editing
+          ? `${values.name} updated in the catalogue.`
+          : `${values.name} added to the catalogue.`,
+      );
+    } catch (requestError) {
+      setActionError(describeError(requestError));
+    }
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!pendingDelete) {
       return;
     }
-    deleteCategory(pendingDelete.id);
-    setMessage(`${pendingDelete.name} removed from this browser.`);
+    const category = pendingDelete;
     setPendingDelete(null);
+    setActionError(null);
+    try {
+      await deleteCategory(category.id);
+      setMessage(`${category.name} removed from the catalogue.`);
+    } catch (requestError) {
+      setActionError(describeError(requestError));
+    }
   }
 
-  function toggleStatus(category: Category) {
+  async function toggleStatus(category: Category) {
     const current = statuses[category.id] ?? "active";
-    setStatus(category.id, current === "suspended" ? "active" : "suspended");
+    const next: AdminEntityStatus =
+      current === "suspended" ? "active" : "suspended";
+    setActionError(null);
+    try {
+      await setCategoryStatus(category.id, next);
+    } catch (requestError) {
+      setActionError(describeError(requestError));
+    }
   }
 
   return (
@@ -120,6 +155,15 @@ export default function AdminCategoriesView() {
         </p>
       ) : null}
 
+      {error || actionError ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          {actionError ?? error}
+        </p>
+      ) : null}
+
       <section className="rounded-2xl border border-line bg-card shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-4 sm:p-5">
           <div className="relative w-full max-w-sm">
@@ -141,13 +185,19 @@ export default function AdminCategoriesView() {
           </p>
         </div>
 
-        {filtered.length > 0 ? (
+        {loading ? (
+          <div className="p-5">
+            <LoadingSpinner className="py-12" label="Loading categories…" />
+          </div>
+        ) : filtered.length > 0 ? (
           <CategoriesTable
             categories={pageItems}
             statuses={statuses}
             onEdit={openEdit}
             onDelete={setPendingDelete}
-            onToggleStatus={toggleStatus}
+            onToggleStatus={(category) => {
+              void toggleStatus(category);
+            }}
           />
         ) : (
           <div className="p-5">
@@ -185,7 +235,7 @@ export default function AdminCategoriesView() {
         open={editorOpen}
         onClose={() => setEditorOpen(false)}
         title={editing ? "Edit category" : "Add category"}
-        description="Category changes are stored in this browser only."
+        description="Changes are saved to the marketplace catalogue and appear across Quicker."
         className="max-w-xl"
       >
         <CategoryForm
@@ -214,12 +264,14 @@ export default function AdminCategoriesView() {
         title="Delete this category?"
         description={
           pendingDelete
-            ? `${pendingDelete.name} will be removed from this browser. Existing services keep their category label.`
+            ? `${pendingDelete.name} will be removed from the marketplace catalogue. Categories with services must be emptied first.`
             : ""
         }
         confirmLabel="Delete category"
         destructive
-        onConfirm={handleDelete}
+        onConfirm={() => {
+          void handleDelete();
+        }}
         onClose={() => setPendingDelete(null)}
       />
     </div>

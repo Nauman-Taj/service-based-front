@@ -73,14 +73,15 @@ function validate(form: FormState): FormErrors {
 /** Customer profile editor plus a read-only account summary. */
 export default function CustomerProfileForm() {
   const { user } = useAuth();
-  const { profile, saveProfile } = useUserProfile(user?.id);
+  const { profile, saveProfile, loading, error } = useUserProfile(user?.id);
 
-  // `draft` is null until the user edits a field. Deriving from the stored
-  // profile keeps the form correct when localStorage hydrates after mount.
+  // `draft` is null until the user edits a field. Deriving from the saved
+  // profile keeps the form correct when the API response arrives after mount.
   const [draft, setDraft] = useState<FormState | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const savedState = toFormState(profile, user?.name ?? "", user?.phone);
   const values = draft ?? savedState;
@@ -90,6 +91,7 @@ export default function CustomerProfileForm() {
   function update(field: keyof FormState, value: string) {
     setDraft({ ...values, [field]: value });
     setSaved(false);
+    setSaveError("");
     if (errors[field]) {
       setErrors({ ...errors, [field]: undefined });
     }
@@ -104,16 +106,23 @@ export default function CustomerProfileForm() {
     }
 
     setSaving(true);
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 300));
-    saveProfile({
-      fullName: values.fullName.trim(),
-      phone: values.phone.trim(),
-      location: values.location.trim(),
-      bio: values.bio.trim(),
-      avatar: values.avatar.trim() || undefined,
-    });
-    setSaving(false);
-    setSaved(true);
+    setSaveError("");
+    try {
+      await saveProfile({
+        fullName: values.fullName.trim(),
+        phone: values.phone.trim(),
+        location: values.location.trim(),
+        bio: values.bio.trim(),
+        avatar: values.avatar.trim() || undefined,
+      });
+      setSaved(true);
+    } catch (error) {
+      setSaveError(
+        error instanceof Error ? error.message : "Could not save your profile.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   function discard() {
@@ -145,6 +154,24 @@ export default function CustomerProfileForm() {
           </div>
         </div>
 
+        {loading ? (
+          <p
+            role="status"
+            className="mt-5 rounded-xl border border-line bg-background px-4 py-3 text-sm font-medium text-muted"
+          >
+            Loading your profile…
+          </p>
+        ) : null}
+
+        {error ? (
+          <p
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+          >
+            {error}
+          </p>
+        ) : null}
+
         {saved ? (
           <div
             role="status"
@@ -153,6 +180,15 @@ export default function CustomerProfileForm() {
             <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
             Your profile has been saved.
           </div>
+        ) : null}
+
+        {saveError ? (
+          <p
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+          >
+            {saveError}
+          </p>
         ) : null}
 
         <div className="mt-6 grid gap-5 sm:grid-cols-2">

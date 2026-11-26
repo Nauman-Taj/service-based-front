@@ -40,7 +40,7 @@ const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 interface WeeklyScheduleProps {
   initialRules: AvailabilityRule[];
   saved: boolean;
-  onSave: (rules: AvailabilityRule[]) => void;
+  onSave: (rules: AvailabilityRule[]) => Promise<void>;
   onDirty: () => void;
 }
 
@@ -64,6 +64,8 @@ function WeeklySchedule({
   const [start, setStart] = useState("09:00");
   const [end, setEnd] = useState("12:00");
   const [slotError, setSlotError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   function changeRules(next: AvailabilityRule[]) {
     setRules(next);
@@ -113,6 +115,22 @@ function WeeklySchedule({
       ),
     );
     setSlotDay(null);
+  }
+
+  async function persist() {
+    setSaving(true);
+    setSaveError("");
+    try {
+      await onSave(rules);
+    } catch (requestError) {
+      setSaveError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not save your schedule.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -196,13 +214,22 @@ function WeeklySchedule({
         ))}
       </div>
 
+      {saveError ? (
+        <p
+          role="alert"
+          className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+        >
+          {saveError}
+        </p>
+      ) : null}
+
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
         <p className="text-xs text-muted">
-          Changes are saved on this device after you confirm.
+          Changes are saved to your account after you confirm.
         </p>
-        <Button onClick={() => onSave(rules)}>
+        <Button onClick={() => void persist()} disabled={saving}>
           <Save className="h-4 w-4" aria-hidden="true" />
-          Save weekly schedule
+          {saving ? "Saving…" : "Save weekly schedule"}
         </Button>
       </div>
 
@@ -263,17 +290,19 @@ function WeeklySchedule({
 
 interface BlockedDatesProps {
   blocked: BlockedDateRecord[];
-  onAdd: (date: string, reason: string) => void;
-  onRemove: (id: string) => void;
+  onAdd: (date: string, reason: string) => Promise<unknown>;
+  onRemove: (id: string) => Promise<void>;
 }
 
 function BlockedDates({ blocked, onAdd, onRemove }: BlockedDatesProps) {
   const [date, setDate] = useState("");
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!date) {
       setError("Choose a date to block.");
@@ -287,11 +316,40 @@ function BlockedDates({ blocked, onAdd, onRemove }: BlockedDatesProps) {
       setError("That date is already blocked.");
       return;
     }
-    onAdd(date, reason.trim());
-    setDate("");
-    setReason("");
-    setError("");
-    setAdded(true);
+
+    setSaving(true);
+    setSaveError("");
+    try {
+      await onAdd(date, reason.trim());
+      setDate("");
+      setReason("");
+      setError("");
+      setAdded(true);
+    } catch (requestError) {
+      setSaveError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not block that date.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRemove(id: string) {
+    setSaving(true);
+    setSaveError("");
+    try {
+      await onRemove(id);
+    } catch (requestError) {
+      setSaveError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not unblock that date.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -347,13 +405,17 @@ function BlockedDates({ blocked, onAdd, onRemove }: BlockedDatesProps) {
             className={`mt-2 ${fieldClasses}`}
           />
         </div>
-        <Button type="submit" className="w-full sm:w-auto">
+        <Button
+          type="submit"
+          className="w-full sm:w-auto"
+          disabled={saving}
+        >
           <Plus className="h-4 w-4" aria-hidden="true" />
-          Block date
+          {saving ? "Saving…" : "Block date"}
         </Button>
-        {error ? (
+        {error || saveError ? (
           <p className="text-sm text-red-600 sm:col-span-3" role="alert">
-            {error}
+            {saveError || error}
           </p>
         ) : null}
       </form>
@@ -385,7 +447,8 @@ function BlockedDates({ blocked, onAdd, onRemove }: BlockedDatesProps) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => onRemove(item.id)}
+                  onClick={() => void handleRemove(item.id)}
+                  disabled={saving}
                   aria-label={`Unblock ${formatDate(item.date)}`}
                   className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-slate-100 hover:text-heading"
                 >
@@ -402,8 +465,15 @@ function BlockedDates({ blocked, onAdd, onRemove }: BlockedDatesProps) {
 
 export default function AvailabilityCalendar() {
   const { user } = useAuth();
-  const { rules, saveRules, blocked, addBlockedDate, removeBlockedDate } =
-    useAvailability(user?.providerId);
+  const {
+    rules,
+    saveRules,
+    blocked,
+    addBlockedDate,
+    removeBlockedDate,
+    loading,
+    error,
+  } = useAvailability(user?.providerId);
   const [scheduleSaved, setScheduleSaved] = useState(false);
 
   return (
@@ -413,12 +483,30 @@ export default function AvailabilityCalendar() {
         description="Set your regular booking hours and block individual dates when you are away."
       />
 
+      {loading ? (
+        <p
+          role="status"
+          className="rounded-2xl border border-line bg-card px-5 py-4 text-sm font-medium text-muted shadow-sm"
+        >
+          Loading your availability…
+        </p>
+      ) : null}
+
+      {error ? (
+        <p
+          role="alert"
+          className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700"
+        >
+          {error}
+        </p>
+      ) : null}
+
       <WeeklySchedule
         key={JSON.stringify(rules)}
         initialRules={rules}
         saved={scheduleSaved}
-        onSave={(next) => {
-          saveRules(next);
+        onSave={async (next) => {
+          await saveRules(next);
           setScheduleSaved(true);
         }}
         onDirty={() => setScheduleSaved(false)}

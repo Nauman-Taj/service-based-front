@@ -18,6 +18,7 @@ import { ButtonLink } from "@/components/common/Button";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import DashboardIntro from "@/components/common/DashboardIntro";
 import EmptyState from "@/components/common/EmptyState";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 import Pagination from "@/components/common/Pagination";
 import Select from "@/components/common/Select";
 import { useManagedProviderServices } from "@/components/provider/provider-service-data";
@@ -33,16 +34,22 @@ import { labelClasses } from "../common/Input";
 
 type StatusFilter = "all" | "active" | "paused";
 
+function describeError(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "We could not update this service. Please try again.";
+}
+
 export default function ProviderServices() {
   const { user } = useAuth();
-  const { services, saveService, deleteService } = useManagedProviderServices(
-    user?.providerId,
-  );
+  const { services, loading, error, saveService, deleteService } =
+    useManagedProviderServices(user?.providerId);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 250);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [pendingDelete, setPendingDelete] =
     useState<ProviderServiceRecord | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const mockRatings = useMemo(
     () => new Map(mockServices.map((service) => [service.id, service])),
@@ -67,11 +74,16 @@ export default function ProviderServices() {
 
   const { pageItems, page, totalPages, setPage } = usePagination(filtered, 6);
 
-  function toggleStatus(service: ProviderServiceRecord) {
-    saveService({
-      ...service,
-      status: service.status === "active" ? "paused" : "active",
-    });
+  async function toggleStatus(service: ProviderServiceRecord) {
+    try {
+      await saveService({
+        ...service,
+        status: service.status === "active" ? "paused" : "active",
+      });
+      setActionError(null);
+    } catch (error) {
+      setActionError(describeError(error));
+    }
   }
 
   return (
@@ -118,7 +130,18 @@ export default function ProviderServices() {
         </div>
       </div>
 
-      {services.length === 0 ? (
+      {error || actionError ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          {actionError ?? error}
+        </p>
+      ) : null}
+
+      {loading ? (
+        <LoadingSpinner label="Loading your services…" />
+      ) : services.length === 0 ? (
         <EmptyState
           icon={Plus}
           title="No services yet"
@@ -225,7 +248,7 @@ export default function ProviderServices() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => toggleStatus(service)}
+                        onClick={() => void toggleStatus(service)}
                       >
                         {isActive ? (
                           <PauseCircle className="h-3.5 w-3.5" aria-hidden="true" />
@@ -270,10 +293,19 @@ export default function ProviderServices() {
         destructive
         onClose={() => setPendingDelete(null)}
         onConfirm={() => {
-          if (pendingDelete) {
-            deleteService(pendingDelete.id);
+          if (!pendingDelete) {
+            return;
           }
+          const service = pendingDelete;
           setPendingDelete(null);
+          void (async () => {
+            try {
+              await deleteService(service.id);
+              setActionError(null);
+            } catch (error) {
+              setActionError(describeError(error));
+            }
+          })();
         }}
       />
     </div>

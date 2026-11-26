@@ -40,33 +40,64 @@ function ToggleRow({ label, description, checked, onChange }: ToggleRowProps) {
   );
 }
 
-/** Local-only admin preferences with working save, reset and sign-out. */
+/** Admin preferences backed by the account settings API. */
 export default function AdminSettingsForm() {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { settings, saveSettings } = useAccountSettings(user?.id);
-  const [form, setForm] = useState<AccountSettingsRecord>(settings);
+  const { settings, saveSettings, loading, error } = useAccountSettings(
+    user?.id,
+  );
+  const [form, setForm] = useState<AccountSettingsRecord | null>(null);
   const [message, setMessage] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const values = form ?? settings;
 
   function update<K extends keyof AccountSettingsRecord>(
     field: K,
     value: AccountSettingsRecord[K],
   ) {
-    setForm((previous) => ({ ...previous, [field]: value }));
+    setForm({ ...values, [field]: value });
     setMessage("");
+    setSaveError("");
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    saveSettings(form);
-    setMessage("Preferences saved to this browser.");
+    setSaving(true);
+    setSaveError("");
+    try {
+      await saveSettings(values);
+      setForm(null);
+      setMessage("Your preferences have been saved.");
+    } catch (requestError) {
+      setSaveError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not save your preferences.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function handleReset() {
-    setForm(defaultAccountSettings);
-    saveSettings(defaultAccountSettings);
-    setMessage("Local admin preferences restored to defaults.");
+  async function handleReset() {
+    setSaving(true);
+    setSaveError("");
+    try {
+      await saveSettings({ ...defaultAccountSettings });
+      setForm(null);
+      setMessage("Your preferences were reset to their defaults.");
+    } catch (requestError) {
+      setSaveError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not reset your preferences.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleSignOut() {
@@ -86,9 +117,26 @@ export default function AdminSettingsForm() {
         <section className="rounded-2xl border border-line bg-card p-5 shadow-sm sm:p-6">
           <h2 className="text-lg font-bold text-heading">Platform preferences</h2>
           <p className="mt-1 text-sm text-muted">
-            These options are stored locally and take effect for this browser
-            immediately.
+            These options are saved to your account and take effect immediately.
           </p>
+
+          {loading ? (
+            <p
+              role="status"
+              className="mt-5 rounded-xl border border-line bg-background px-4 py-3 text-sm font-medium text-muted"
+            >
+              Loading your preferences…
+            </p>
+          ) : null}
+
+          {error || saveError ? (
+            <p
+              role="alert"
+              className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+            >
+              {saveError || error}
+            </p>
+          ) : null}
 
           {message ? (
             <p
@@ -109,19 +157,19 @@ export default function AdminSettingsForm() {
                 <ToggleRow
                   label="Email notifications"
                   description="Receive platform alerts and booking updates by email."
-                  checked={form.emailNotifications}
+                  checked={values.emailNotifications}
                   onChange={(value) => update("emailNotifications", value)}
                 />
                 <ToggleRow
                   label="SMS notifications"
                   description="Receive urgent service alerts as text messages."
-                  checked={form.smsNotifications}
+                  checked={values.smsNotifications}
                   onChange={(value) => update("smsNotifications", value)}
                 />
                 <ToggleRow
                   label="Marketing emails"
                   description="Receive occasional marketplace news and offers."
-                  checked={form.marketingEmails}
+                  checked={values.marketingEmails}
                   onChange={(value) => update("marketingEmails", value)}
                 />
               </div>
@@ -135,13 +183,13 @@ export default function AdminSettingsForm() {
                 <ToggleRow
                   label="Public profile visibility"
                   description="Make your administrator profile visible inside the portal."
-                  checked={form.showPublicProfile}
+                  checked={values.showPublicProfile}
                   onChange={(value) => update("showPublicProfile", value)}
                 />
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Select
                     label="Language"
-                    value={form.language}
+                    value={values.language}
                     onChange={(event) =>
                       update(
                         "language",
@@ -154,7 +202,7 @@ export default function AdminSettingsForm() {
                   </Select>
                   <Select
                     label="Timezone"
-                    value={form.timezone}
+                    value={values.timezone}
                     onChange={(event) =>
                       update(
                         "timezone",
@@ -172,13 +220,16 @@ export default function AdminSettingsForm() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
               <Button
                 variant="ghost"
-                onClick={handleReset}
+                onClick={() => void handleReset()}
+                disabled={saving}
                 className="text-muted"
               >
                 <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                Reset local admin preferences
+                Reset preferences
               </Button>
-              <Button type="submit">Save preferences</Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? "Saving…" : "Save preferences"}
+              </Button>
             </div>
           </form>
         </section>

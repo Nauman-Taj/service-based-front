@@ -8,6 +8,7 @@ import { useState, type FormEvent } from "react";
 import { useAdminCategories } from "@/components/admin/admin-category-store";
 import {
   useAdminServiceOverrides,
+  type AdminServiceRecord,
   type ServiceOverride,
 } from "@/components/admin/admin-service-overrides";
 import AdminStatusBadge from "@/components/admin/AdminStatusBadge";
@@ -17,10 +18,18 @@ import ConfirmDialog from "@/components/common/ConfirmDialog";
 import DashboardIntro from "@/components/common/DashboardIntro";
 import EmptyState from "@/components/common/EmptyState";
 import Input from "@/components/common/Input";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 import Select from "@/components/common/Select";
 import Textarea from "@/components/common/Textarea";
-import { useAdminStatuses } from "@/hooks/usePortalData";
+import type { Category } from "@/types/category";
+import type { AdminEntityStatus } from "@/types/dashboard";
 import { formatCurrency } from "@/utils/formatCurrency";
+
+function describeError(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "We could not update this service. Please try again.";
+}
 
 export default function AdminServiceEditor() {
   const params = useParams<{ serviceId: string }>();
@@ -31,92 +40,24 @@ export default function AdminServiceEditor() {
 }
 
 function ServiceEditorInner({ serviceId }: { serviceId: string }) {
-  const router = useRouter();
-  const { getServiceById, saveService, deleteService } =
-    useAdminServiceOverrides();
-  const { categories } = useAdminCategories();
-  const { statuses, setStatus } = useAdminStatuses();
+  const {
+    getServiceById,
+    saveService,
+    deleteService,
+    setServiceStatus,
+    statuses,
+    loading: servicesLoading,
+    error: servicesError,
+  } = useAdminServiceOverrides();
+  const {
+    categories,
+    loading: categoriesLoading,
+    error: categoriesError,
+  } = useAdminCategories();
   const service = getServiceById(serviceId);
 
-  const [form, setForm] = useState<ServiceOverride>({
-    title: service?.title ?? "",
-    description: service?.description ?? "",
-    price: service?.price ?? 0,
-    categorySlug: service?.categorySlug ?? "",
-    categoryName: service?.categoryName ?? "",
-    featured: service?.featured ?? false,
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [message, setMessage] = useState("");
-  const [confirmation, setConfirmation] = useState<"delete" | "pause" | null>(
-    null,
-  );
-
-  const currentStatus = statuses[serviceId] ?? "active";
-
-  function update<K extends keyof ServiceOverride>(
-    field: K,
-    value: ServiceOverride[K],
-  ) {
-    setForm((previous) => ({ ...previous, [field]: value }));
-    setErrors((previous) => ({ ...previous, [field]: "" }));
-    setMessage("");
-  }
-
-  function validate(): Record<string, string> {
-    const next: Record<string, string> = {};
-    if (form.title.trim().length < 3) {
-      next.title = "Enter a service title of at least 3 characters.";
-    }
-    if (form.description.trim().length < 10) {
-      next.description = "Describe the service in at least 10 characters.";
-    }
-    if (!Number.isFinite(form.price) || form.price <= 0) {
-      next.price = "Enter a price greater than zero.";
-    }
-    if (!form.categorySlug) {
-      next.categorySlug = "Choose a service category.";
-    }
-    return next;
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const nextErrors = validate();
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) {
-      return;
-    }
-
-    const selectedCategory = categories.find(
-      (category) => category.slug === form.categorySlug,
-    );
-    saveService(serviceId, {
-      ...form,
-      title: form.title.trim(),
-      description: form.description.trim(),
-      price: Math.round(form.price),
-      categoryName: selectedCategory?.name ?? form.categoryName,
-    });
-    setMessage("Service changes saved to this browser.");
-  }
-
-  function handleConfirmation() {
-    if (confirmation === "delete") {
-      deleteService(serviceId);
-      router.push("/admin/services");
-      return;
-    }
-
-    if (confirmation === "pause") {
-      const next = currentStatus === "suspended" ? "active" : "suspended";
-      setStatus(serviceId, next);
-      setMessage(
-        next === "suspended"
-          ? "Service paused. It is no longer active in the admin catalogue."
-          : "Service activated.",
-      );
-    }
+  if (servicesLoading || categoriesLoading) {
+    return <LoadingSpinner label="Loading service…" />;
   }
 
   if (!service) {
@@ -129,7 +70,10 @@ function ServiceEditorInner({ serviceId }: { serviceId: string }) {
         <EmptyState
           icon={Trash2}
           title="Service not found"
-          description="This service is not in the local catalogue. It may have been removed by an administrator."
+          description={
+            servicesError ??
+            "This service is not in the marketplace catalogue. It may have been removed by an administrator."
+          }
           action={
             <ButtonLink href="/admin/services" size="sm">
               View all services
@@ -138,6 +82,144 @@ function ServiceEditorInner({ serviceId }: { serviceId: string }) {
         />
       </div>
     );
+  }
+
+  const currentStatus: AdminEntityStatus =
+    statuses[serviceId] ??
+    (service.status === "active" ? "active" : "suspended");
+
+  return (
+    <ServiceEditorForm
+      service={service}
+      categories={categories}
+      currentStatus={currentStatus}
+      loadError={servicesError ?? categoriesError}
+      saveService={saveService}
+      deleteService={deleteService}
+      setServiceStatus={setServiceStatus}
+    />
+  );
+}
+
+interface ServiceEditorFormProps {
+  service: AdminServiceRecord;
+  categories: Category[];
+  currentStatus: AdminEntityStatus;
+  loadError: string | null;
+  saveService: (id: string, next: ServiceOverride) => Promise<void>;
+  deleteService: (id: string) => Promise<void>;
+  setServiceStatus: (id: string, status: AdminEntityStatus) => Promise<void>;
+}
+
+function ServiceEditorForm({
+  service,
+  categories,
+  currentStatus,
+  loadError,
+  saveService,
+  deleteService,
+  setServiceStatus,
+}: ServiceEditorFormProps) {
+  const router = useRouter();
+  const [form, setForm] = useState<ServiceOverride>({
+    title: service.title,
+    description: service.description,
+    price: service.price,
+    categorySlug: service.categorySlug,
+    categoryName: service.categoryName,
+    featured: service.featured,
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [message, setMessage] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [confirmation, setConfirmation] = useState<"delete" | "pause" | null>(
+    null,
+  );
+
+  function update<K extends keyof ServiceOverride>(
+    field: K,
+    value: ServiceOverride[K],
+  ) {
+    setForm((previous) => ({ ...previous, [field]: value }));
+    setErrors((previous) => ({ ...previous, [field]: "" }));
+    setMessage("");
+  }
+
+  function validate(): Record<string, string> {
+    const next: Record<string, string> = {};
+    if (form.title.trim().length < 5) {
+      next.title = "Enter a service title of at least 5 characters.";
+    }
+    if (form.description.trim().length < 20) {
+      next.description = "Describe the service in at least 20 characters.";
+    }
+    if (!Number.isFinite(form.price) || form.price <= 0) {
+      next.price = "Enter a price greater than zero.";
+    }
+    if (!form.categorySlug) {
+      next.categorySlug = "Choose a service category.";
+    }
+    return next;
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextErrors = validate();
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      return;
+    }
+
+    const selectedCategory = categories.find(
+      (category) => category.slug === form.categorySlug,
+    );
+    setSaving(true);
+    setActionError(null);
+    setMessage("");
+    try {
+      await saveService(service.id, {
+        ...form,
+        title: form.title.trim(),
+        description: form.description.trim(),
+        price: Math.round(form.price),
+        categoryName: selectedCategory?.name ?? form.categoryName,
+      });
+      setMessage("Service changes saved to the marketplace catalogue.");
+    } catch (requestError) {
+      setActionError(describeError(requestError));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleConfirmation() {
+    if (confirmation === "delete") {
+      setActionError(null);
+      try {
+        await deleteService(service.id);
+        router.push("/admin/services");
+      } catch (requestError) {
+        setActionError(describeError(requestError));
+      }
+      return;
+    }
+
+    if (confirmation === "pause") {
+      const next: AdminEntityStatus =
+        currentStatus === "suspended" ? "active" : "suspended";
+      setActionError(null);
+      try {
+        await setServiceStatus(service.id, next);
+        setMessage(
+          next === "suspended"
+            ? "Service paused. It is no longer active in the marketplace catalogue."
+            : "Service activated.",
+        );
+      } catch (requestError) {
+        setActionError(describeError(requestError));
+      }
+    }
   }
 
   return (
@@ -162,8 +244,17 @@ function ServiceEditorInner({ serviceId }: { serviceId: string }) {
         <section className="rounded-2xl border border-line bg-card p-5 shadow-sm sm:p-6">
           <h2 className="text-lg font-bold text-heading">Listing details</h2>
           <p className="mt-1 text-sm text-muted">
-            Saved changes appear in the admin services table immediately.
+            Saved changes are written to the API and appear across the marketplace.
           </p>
+
+          {loadError || actionError ? (
+            <p
+              role="alert"
+              className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
+              {actionError ?? loadError}
+            </p>
+          ) : null}
 
           {message ? (
             <p
@@ -237,6 +328,7 @@ function ServiceEditorInner({ serviceId }: { serviceId: string }) {
 
             <div className="flex flex-wrap justify-end gap-3 border-t border-line pt-5">
               <Button
+                type="button"
                 variant="outline"
                 onClick={() => setConfirmation("pause")}
               >
@@ -248,13 +340,16 @@ function ServiceEditorInner({ serviceId }: { serviceId: string }) {
                 {currentStatus === "suspended" ? "Activate" : "Pause"}
               </Button>
               <Button
+                type="button"
                 variant="secondary"
                 onClick={() => setConfirmation("delete")}
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
                 Delete
               </Button>
-              <Button type="submit">Save changes</Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? "Saving..." : "Save changes"}
+              </Button>
             </div>
           </form>
         </section>
@@ -333,10 +428,12 @@ function ServiceEditorInner({ serviceId }: { serviceId: string }) {
       <ConfirmDialog
         open={confirmation === "delete"}
         title="Delete this service?"
-        description="The listing will be removed from the admin catalogue. This affects this browser only."
+        description="The listing will be removed from the marketplace catalogue. Services with bookings cannot be deleted by the API."
         confirmLabel="Delete service"
         destructive
-        onConfirm={handleConfirmation}
+        onConfirm={() => {
+          void handleConfirmation();
+        }}
         onClose={() => setConfirmation(null)}
       />
       <ConfirmDialog
@@ -348,11 +445,13 @@ function ServiceEditorInner({ serviceId }: { serviceId: string }) {
         }
         description={
           currentStatus === "suspended"
-            ? "The service will return to active status in the admin catalogue."
+            ? "The service will return to active status in the marketplace catalogue."
             : "The service will be marked as paused until you activate it again."
         }
         confirmLabel={currentStatus === "suspended" ? "Activate" : "Pause"}
-        onConfirm={handleConfirmation}
+        onConfirm={() => {
+          void handleConfirmation();
+        }}
         onClose={() => setConfirmation(null)}
       />
     </div>

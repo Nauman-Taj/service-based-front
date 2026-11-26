@@ -31,13 +31,28 @@ export default function BookingStatusActions({
 }: BookingStatusActionsProps) {
   const { updateBookingStatus } = useBookings();
   const [pending, setPending] = useState<BookingStatusAction | null>(null);
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!actions.length) {
     return null;
   }
 
-  function apply(action: BookingStatusAction) {
-    updateBookingStatus(booking.id, action.status);
+  async function apply(action: BookingStatusAction) {
+    setRunning(true);
+    setError(null);
+    try {
+      await updateBookingStatus(booking.id, action.status);
+      setPending(null);
+    } catch (updateError) {
+      setError(
+        updateError instanceof Error
+          ? updateError.message
+          : "We could not update this booking. Please try again.",
+      );
+    } finally {
+      setRunning(false);
+    }
   }
 
   return (
@@ -49,11 +64,12 @@ export default function BookingStatusActions({
             key={`${action.status}-${action.label}`}
             variant={action.variant ?? "primary"}
             size="sm"
+            disabled={running}
             onClick={() => {
               if (action.confirmTitle) {
                 setPending(action);
               } else {
-                apply(action);
+                void apply(action);
               }
             }}
           >
@@ -74,11 +90,17 @@ export default function BookingStatusActions({
         destructive={pending?.destructive ?? false}
         onConfirm={() => {
           if (pending) {
-            apply(pending);
+            void apply(pending);
           }
         }}
         onClose={() => setPending(null)}
       />
+
+      {error ? (
+        <p role="alert" className="w-full text-xs text-red-600">
+          {error}
+        </p>
+      ) : null}
     </>
   );
 }

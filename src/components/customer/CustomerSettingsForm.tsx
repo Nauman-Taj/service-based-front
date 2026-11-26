@@ -5,8 +5,6 @@ import { useState, type FormEvent } from "react";
 import {
   Bell,
   CheckCircle2,
-  Clock3,
-  Globe,
   LogOut,
   RotateCcw,
   ShieldCheck,
@@ -63,12 +61,15 @@ function ToggleRow({ label, description, checked, onChange }: ToggleRowProps) {
 export default function CustomerSettingsForm() {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { settings, saveSettings } = useAccountSettings(user?.id);
+  const { settings, saveSettings, loading, error } = useAccountSettings(
+    user?.id,
+  );
 
-  // Deriving from the stored settings keeps the form correct when localStorage
-  // hydrates after mount, without overwriting edits already in progress.
+  // Deriving from the saved settings keeps the form correct when the API
+  // response arrives after mount, without overwriting edits already in progress.
   const [draft, setDraft] = useState<AccountSettingsRecord | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -80,22 +81,37 @@ export default function CustomerSettingsForm() {
   ) {
     setDraft({ ...values, [field]: value });
     setNotice(null);
+    setSaveError("");
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 300));
-    saveSettings(values);
-    setSaving(false);
-    setDraft(null);
-    setNotice("Your preferences have been saved.");
+    setSaveError("");
+    try {
+      await saveSettings(values);
+      setDraft(null);
+      setNotice("Your preferences have been saved.");
+    } catch (error) {
+      setSaveError(
+        error instanceof Error ? error.message : "Could not save your settings.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function handleReset() {
-    saveSettings({ ...defaultAccountSettings });
-    setDraft(null);
-    setNotice("Local preferences were reset to their defaults.");
+  async function handleReset() {
+    try {
+      await saveSettings({ ...defaultAccountSettings });
+      setDraft(null);
+      setSaveError("");
+      setNotice("Your preferences were reset to their defaults.");
+    } catch (error) {
+      setSaveError(
+        error instanceof Error ? error.message : "Could not reset your settings.",
+      );
+    }
   }
 
   async function handleSignOut() {
@@ -196,6 +212,24 @@ export default function CustomerSettingsForm() {
           </div>
         </section>
 
+        {loading ? (
+          <p
+            role="status"
+            className="mt-5 rounded-xl border border-line bg-background px-4 py-3 text-sm font-medium text-muted"
+          >
+            Loading your preferences…
+          </p>
+        ) : null}
+
+        {error || saveError ? (
+          <p
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+          >
+            {saveError || error}
+          </p>
+        ) : null}
+
         {notice ? (
           <div
             role="status"
@@ -221,7 +255,7 @@ export default function CustomerSettingsForm() {
           <div>
             <h3 className="text-base font-bold text-heading">Danger zone</h3>
             <p className="mt-0.5 text-sm text-muted">
-              Manage your session and locally stored preferences.
+              Manage your session and account preferences.
             </p>
           </div>
         </div>
@@ -248,16 +282,20 @@ export default function CustomerSettingsForm() {
           <div className="flex flex-wrap items-center justify-between gap-3 py-4">
             <div>
               <p className="text-sm font-semibold text-heading">
-                Clear local preferences
+                Reset preferences
               </p>
               <p className="mt-0.5 text-xs leading-relaxed text-muted">
-                Restore notification and locale settings to their defaults.
-                Your profile and bookings are not affected.
+                Restore notification and locale settings to their defaults on
+                your account. Your profile and bookings are not affected.
               </p>
             </div>
-            <Button variant="ghost" onClick={handleReset}>
+            <Button
+              variant="ghost"
+              onClick={() => void handleReset()}
+              disabled={saving}
+            >
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
-              Clear preferences
+              Reset preferences
             </Button>
           </div>
         </div>

@@ -5,8 +5,7 @@ import Link from "next/link";
 import { CalendarDays, CheckCircle2 } from "lucide-react";
 
 import Button, { ButtonLink } from "@/components/common/Button";
-import { useAuth } from "@/hooks/useAuth";
-import { createBooking } from "@/lib/booking-store";
+import { useBookings } from "@/hooks/useBookings";
 import type { Service } from "@/types/service";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { priceUnitLabels } from "@/utils/priceUnit";
@@ -84,11 +83,13 @@ function validate(values: FormValues): FormErrors {
 }
 
 export default function BookingForm({ service }: BookingFormProps) {
-  const { user } = useAuth();
+  const { createBooking } = useBookings();
   const [values, setValues] = useState<FormValues>(initialValues);
   const [errors, setErrors] = useState<FormErrors>({});
   const [reference, setReference] = useState<string | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   function update(
     field: keyof FormValues,
@@ -104,8 +105,11 @@ export default function BookingForm({ service }: BookingFormProps) {
     };
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting) {
+      return;
+    }
 
     const nextErrors = validate(values);
     setErrors(nextErrors);
@@ -113,23 +117,36 @@ export default function BookingForm({ service }: BookingFormProps) {
       return;
     }
 
-    const booking = createBooking({
-      serviceId: service.id,
-      customerId: user?.role === "customer" ? user.id : "guest",
-      customerName: values.name.trim(),
-      date: values.date,
-      timeSlot: values.time,
-      address: values.address.trim(),
-      notes: values.notes.trim() || undefined,
-    });
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const booking = await createBooking({
+        serviceId: service.id,
+        customerId: "guest",
+        customerName: values.name.trim(),
+        date: values.date,
+        timeSlot: values.time,
+        address: values.address.trim(),
+        notes: values.notes.trim() || undefined,
+      });
 
-    setReference(booking.reference);
-    setBookingId(booking.id);
+      setReference(booking.reference);
+      setBookingId(booking.id);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "We could not submit your request. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleReset() {
     setValues(initialValues);
     setErrors({});
+    setSubmitError(null);
     setReference(null);
     setBookingId(null);
   }
@@ -344,8 +361,17 @@ export default function BookingForm({ service }: BookingFormProps) {
           />
         </div>
 
-        <Button type="submit" className="w-full">
-          Request this service
+        {submitError ? (
+          <p
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          >
+            {submitError}
+          </p>
+        ) : null}
+
+        <Button type="submit" className="w-full" disabled={submitting}>
+          {submitting ? "Sending request…" : "Request this service"}
         </Button>
         <p className="text-center text-xs text-muted">
           No payment today — we confirm the details first.

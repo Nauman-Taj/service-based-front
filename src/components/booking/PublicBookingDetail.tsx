@@ -8,7 +8,6 @@ import LoadingSpinner from "@/components/common/LoadingSpinner";
 import BookingDetailsPanel from "@/components/booking/BookingDetailsPanel";
 import BookingNotFound from "@/components/booking/BookingNotFound";
 import BookingStatusTimeline from "@/components/booking/BookingStatusTimeline";
-import { useBookingsReady } from "@/components/booking/useBookingsReady";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookings } from "@/hooks/useBookings";
 
@@ -20,12 +19,11 @@ interface PublicBookingDetailProps {
 export default function PublicBookingDetail({
   bookingId,
 }: PublicBookingDetailProps) {
-  const { bookings } = useBookings();
+  const { bookings, loading } = useBookings();
   const { user } = useAuth();
-  const ready = useBookingsReady();
   const booking = bookings.find((item) => item.id === bookingId);
 
-  if (!ready) {
+  if (loading) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <LoadingSpinner

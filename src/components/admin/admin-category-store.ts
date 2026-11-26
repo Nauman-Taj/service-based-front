@@ -1,105 +1,177 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+/** Admin category catalogue backed by the NestJS API. */
 
-import { categories as mockCategories } from "@/data/categories";
-import { services as mockServices } from "@/data/services";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { makeId } from "@/lib/portal-store";
-import type { Category } from "@/types/category";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   CATEGORY_ICON_MAP,
   type CategoryFormValues,
   type CategoryIconName,
 } from "@/components/forms/CategoryForm";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  createCategoryRequest,
+  deleteCategoryRequest,
+  fetchAdminCategories,
+  updateCategoryRequest,
+  type ApiCategory,
+  type CategoryIconKey,
+  type CategoryRequest,
+} from "@/lib/portal-api";
+import type { Category } from "@/types/category";
+import type { AdminEntityStatus } from "@/types/dashboard";
 
+/** Legacy storage keys, kept only so older imports do not break. */
 export const ADMIN_CATEGORIES_KEY = "quicker:admin-categories";
 export const ADMIN_CATEGORY_OVERRIDES_KEY = "quicker:admin-category-overrides";
 export const ADMIN_CATEGORY_DELETIONS_KEY = "quicker:admin-category-deletions";
 
-interface StoredCategory extends CategoryFormValues {
-  id: string;
+function errorMessage(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "The category request could not be completed. Please try again.";
 }
 
-const EMPTY_CATEGORIES: StoredCategory[] = [];
-const EMPTY_OVERRIDES: Record<string, StoredCategory> = {};
-const EMPTY_DELETIONS: string[] = [];
-
-function toCategory(stored: StoredCategory): Category {
+function toCategory(record: ApiCategory): Category {
   return {
-    id: stored.id,
-    name: stored.name,
-    slug: stored.slug,
-    description: stored.description,
-    icon: CATEGORY_ICON_MAP[stored.icon as CategoryIconName],
-    serviceCount: 0,
+    id: record.id,
+    name: record.name,
+    slug: record.slug,
+    description: record.description,
+    icon:
+      CATEGORY_ICON_MAP[record.icon as CategoryIconName] ??
+      CATEGORY_ICON_MAP.Sparkles,
+    serviceCount: record.serviceCount,
   };
 }
 
-/** Live category list built from mock data plus admin localStorage edits. */
+function toStatus(record: ApiCategory): AdminEntityStatus {
+  return record.enabled ? "active" : "suspended";
+}
+
+/** Live category list and status controls from `/categories/admin`. */
 export function useAdminCategories() {
-  const [customCategories, setCustomCategories] = useLocalStorage<
-    StoredCategory[]
-  >(ADMIN_CATEGORIES_KEY, EMPTY_CATEGORIES);
-  const [overrides, setOverrides] = useLocalStorage<
-    Record<string, StoredCategory>
-  >(ADMIN_CATEGORY_OVERRIDES_KEY, EMPTY_OVERRIDES);
-  const [deletedIds, setDeletedIds] = useLocalStorage<string[]>(
-    ADMIN_CATEGORY_DELETIONS_KEY,
-    EMPTY_DELETIONS,
+  const { user, status, getAccessToken } = useAuth();
+  const [records, setRecords] = useState<ApiCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (status === "loading") {
+      return;
+    }
+    if (!user) {
+      setRecords([]);
+      setLoading(false);
+      return;
+    }
+
+    const token = await getAccessToken();
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const rows = await fetchAdminCategories(token);
+      setRecords(rows);
+      setError(null);
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+      setRecords([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [getAccessToken, status, user]);
+
+  useEffect(() => {
+    // Categories are fetched after the tab-local auth session is ready.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refresh();
+  }, [refresh]);
+
+  const categories = useMemo<Category[]>(
+    () => records.map(toCategory),
+    [records],
   );
 
-  const categories = useMemo<Category[]>(() => {
-    const base = mockCategories.map((category) => {
-      const override = overrides[category.id];
-      return override ? { ...category, ...toCategory(override) } : category;
+  const statuses = useMemo<Record<string, AdminEntityStatus>>(() => {
+    const map: Record<string, AdminEntityStatus> = {};
+    records.forEach((record) => {
+      map[record.id] = toStatus(record);
     });
-
-    return [...base, ...customCategories.map(toCategory)]
-      .filter((category) => !deletedIds.includes(category.id))
-      .map((category) => ({
-        ...category,
-        serviceCount: mockServices.filter(
-          (service) => service.categorySlug === category.slug,
-        ).length,
-      }));
-  }, [customCategories, overrides, deletedIds]);
+    return map;
+  }, [records]);
 
   const saveCategory = useCallback(
-    (values: CategoryFormValues, id?: string): string => {
-      if (id && customCategories.some((category) => category.id === id)) {
-        setCustomCategories((previous) =>
-          previous.map((category) =>
-            category.id === id ? { ...category, ...values } : category,
-          ),
-        );
-        return id;
+    async (values: CategoryFormValues, id?: string): Promise<string> => {
+      const token = await getAccessToken();
+      if (!token) {
+        throw new Error("Sign in again to save this category.");
       }
 
-      if (id && mockCategories.some((category) => category.id === id)) {
-        setOverrides((previous) => ({
-          ...previous,
-          [id]: { ...values, id },
-        }));
-        return id;
-      }
+      const payload: CategoryRequest = {
+        name: values.name.trim(),
+        slug: values.slug.trim().toLowerCase(),
+        description: values.description.trim(),
+        icon: values.icon as CategoryIconKey,
+      };
 
-      const created: StoredCategory = { ...values, id: makeId("cat") };
-      setCustomCategories((previous) => [created, ...previous]);
-      return created.id;
+      const saved = id
+        ? await updateCategoryRequest(id, payload, token)
+        : await createCategoryRequest(payload, token);
+
+      setRecords((previous) =>
+        id
+          ? previous.map((record) => (record.id === id ? saved : record))
+          : [saved, ...previous],
+      );
+      return saved.id;
     },
-    [customCategories, setCustomCategories, setOverrides],
+    [getAccessToken],
   );
 
   const deleteCategory = useCallback(
-    (id: string) => {
-      setDeletedIds((previous) =>
-        previous.includes(id) ? previous : [...previous, id],
-      );
+    async (id: string): Promise<void> => {
+      const token = await getAccessToken();
+      if (!token) {
+        throw new Error("Sign in again to delete this category.");
+      }
+
+      await deleteCategoryRequest(id, token);
+      setRecords((previous) => previous.filter((record) => record.id !== id));
     },
-    [setDeletedIds],
+    [getAccessToken],
   );
 
-  return { categories, saveCategory, deleteCategory, deletedIds };
+  const setCategoryStatus = useCallback(
+    async (id: string, nextStatus: AdminEntityStatus): Promise<void> => {
+      const token = await getAccessToken();
+      if (!token) {
+        throw new Error("Sign in again to update this category.");
+      }
+
+      const saved = await updateCategoryRequest(
+        id,
+        { enabled: nextStatus === "active" },
+        token,
+      );
+      setRecords((previous) =>
+        previous.map((record) => (record.id === id ? saved : record)),
+      );
+    },
+    [getAccessToken],
+  );
+
+  return {
+    categories,
+    statuses,
+    loading,
+    error,
+    refresh,
+    saveCategory,
+    deleteCategory,
+    setCategoryStatus,
+  };
 }

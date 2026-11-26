@@ -52,12 +52,16 @@ function ToggleRow({ id, title, description, defaultChecked }: ToggleRowProps) {
 
 export default function ProviderSettingsForm() {
   const { user, logout } = useAuth();
-  const { settings, saveSettings } = useAccountSettings(user?.id);
+  const { settings, saveSettings, loading, error } = useAccountSettings(
+    user?.id,
+  );
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [signingOut, setSigningOut] = useState(false);
   const router = useRouter();
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const language: AccountSettingsRecord["language"] =
@@ -65,15 +69,27 @@ export default function ProviderSettingsForm() {
     const timezone: AccountSettingsRecord["timezone"] =
       data.get("timezone") === "UTC" ? "UTC" : "Asia/Karachi";
 
-    saveSettings({
-      emailNotifications: data.has("emailNotifications"),
-      smsNotifications: data.has("smsNotifications"),
-      marketingEmails: data.has("marketingEmails"),
-      showPublicProfile: data.has("showPublicProfile"),
-      language,
-      timezone,
-    });
-    setSaved(true);
+    setSaving(true);
+    setSaveError("");
+    try {
+      await saveSettings({
+        emailNotifications: data.has("emailNotifications"),
+        smsNotifications: data.has("smsNotifications"),
+        marketingEmails: data.has("marketingEmails"),
+        showPublicProfile: data.has("showPublicProfile"),
+        language,
+        timezone,
+      });
+      setSaved(true);
+    } catch (requestError) {
+      setSaveError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not save your settings.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleSignOut() {
@@ -95,6 +111,24 @@ export default function ProviderSettingsForm() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="rounded-2xl border border-line bg-card p-5 shadow-sm sm:p-7">
+          {loading ? (
+            <p
+              role="status"
+              className="mb-5 rounded-xl border border-line bg-background px-4 py-3 text-sm font-medium text-muted"
+            >
+              Loading your preferences…
+            </p>
+          ) : null}
+
+          {error || saveError ? (
+            <p
+              role="alert"
+              className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+            >
+              {saveError || error}
+            </p>
+          ) : null}
+
           {saved ? (
             <p
               role="status"
@@ -176,13 +210,13 @@ export default function ProviderSettingsForm() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
-              <Button type="submit">
+              <Button type="submit" disabled={saving}>
                 <Save className="h-4 w-4" aria-hidden="true" />
-                Save settings
+                {saving ? "Saving…" : "Save settings"}
               </Button>
               <p className="flex items-center gap-1.5 text-xs text-muted">
                 <Globe2 className="h-3.5 w-3.5" aria-hidden="true" />
-                Preferences are stored on this device for now.
+                Preferences are saved to your account.
               </p>
             </div>
           </form>

@@ -18,6 +18,7 @@ import ConfirmDialog from "@/components/common/ConfirmDialog";
 import DashboardIntro from "@/components/common/DashboardIntro";
 import EmptyState from "@/components/common/EmptyState";
 import Input from "@/components/common/Input";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 import Select from "@/components/common/Select";
 import Textarea from "@/components/common/Textarea";
 import { useManagedProviderServices } from "@/components/provider/provider-service-data";
@@ -50,9 +51,15 @@ type ServiceErrors = Partial<Record<keyof ServiceValues, string>>;
 
 interface ServiceFieldsProps {
   service?: ProviderServiceRecord;
-  saveService: (service: ProviderServiceRecord) => void;
-  deleteService: (id: string) => void;
+  saveService: (service: ProviderServiceRecord) => Promise<ProviderServiceRecord>;
+  deleteService: (id: string) => Promise<void>;
   onDone: () => void;
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "We could not save this service. Please try again.";
 }
 
 function isImageSource(value: string): boolean {
@@ -128,6 +135,8 @@ function ServiceFields({
     valuesFromService(service, presetImages[0] ?? ""),
   );
   const [errors, setErrors] = useState<ServiceErrors>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   function update<K extends keyof ServiceValues>(
@@ -138,8 +147,12 @@ function ServiceFields({
     setErrors((previous) => ({ ...previous, [field]: undefined }));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting) {
+      return;
+    }
+
     const nextErrors = validate(values);
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) {
@@ -153,28 +166,36 @@ function ServiceFields({
       return;
     }
 
-    saveService({
-      id: service?.id ?? makeId("svc"),
-      title: values.title.trim(),
-      description: values.description.trim(),
-      categorySlug: category.slug,
-      categoryName: category.name,
-      price: Number(values.price),
-      priceUnit: values.priceUnit,
-      image: values.image.trim(),
-      featured: values.featured,
-      tags: values.tagsText
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-      includes: values.includesText
-        .split("\n")
-        .map((item) => item.trim())
-        .filter(Boolean),
-      status: values.status,
-      createdAt: service?.createdAt ?? new Date().toISOString(),
-    });
-    onDone();
+    setSubmitting(true);
+    setFormError(null);
+    try {
+      await saveService({
+        id: service?.id ?? makeId("svc"),
+        title: values.title.trim(),
+        description: values.description.trim(),
+        categorySlug: category.slug,
+        categoryName: category.name,
+        price: Number(values.price),
+        priceUnit: values.priceUnit,
+        image: values.image.trim(),
+        featured: values.featured,
+        tags: values.tagsText
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+        includes: values.includesText
+          .split("\n")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        status: values.status,
+        createdAt: service?.createdAt ?? new Date().toISOString(),
+      });
+      onDone();
+    } catch (error) {
+      setFormError(describeError(error));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -403,9 +424,21 @@ function ServiceFields({
           </section>
 
           <div className="space-y-3">
-            <Button type="submit" className="w-full">
+            {formError ? (
+              <p
+                role="alert"
+                className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+              >
+                {formError}
+              </p>
+            ) : null}
+            <Button type="submit" className="w-full" disabled={submitting}>
               <Save className="h-4 w-4" aria-hidden="true" />
-              {service ? "Save changes" : "Create service"}
+              {submitting
+                ? "Saving…"
+                : service
+                  ? "Save changes"
+                  : "Create service"}
             </Button>
             {service ? (
               <Button
@@ -433,10 +466,19 @@ function ServiceFields({
         destructive
         onClose={() => setConfirmDelete(false)}
         onConfirm={() => {
-          if (service) {
-            deleteService(service.id);
+          if (!service) {
+            return;
           }
-          onDone();
+          void (async () => {
+            try {
+              await deleteService(service.id);
+              setConfirmDelete(false);
+              onDone();
+            } catch (error) {
+              setConfirmDelete(false);
+              setFormError(describeError(error));
+            }
+          })();
         }}
       />
     </div>
@@ -446,9 +488,8 @@ function ServiceFields({
 export default function ServiceForm({ serviceId }: { serviceId?: string }) {
   const { user } = useAuth();
   const providerId = user?.providerId;
-  const { services, saveService, deleteService } = useManagedProviderServices(
-    providerId,
-  );
+  const { services, loading, saveService, deleteService } =
+    useManagedProviderServices(providerId);
   const router = useRouter();
   const service = serviceId
     ? services.find((item) => item.id === serviceId)
@@ -465,6 +506,10 @@ export default function ServiceForm({ serviceId }: { serviceId?: string }) {
         }
       />
     );
+  }
+
+  if (serviceId && loading) {
+    return <LoadingSpinner label="Loading service…" />;
   }
 
   if (serviceId && !service) {

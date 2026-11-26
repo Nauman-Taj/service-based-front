@@ -38,9 +38,11 @@ function isRemoteOrLocalPath(value: string): boolean {
 
 export default function ProviderProfileForm() {
   const { user } = useAuth();
-  const { profile, saveProfile } = useUserProfile(user?.id);
+  const { profile, saveProfile, loading, error } = useUserProfile(user?.id);
   const [errors, setErrors] = useState<FormErrors>({});
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const provider = user?.providerId
     ? getProviderById(user.providerId)
@@ -74,7 +76,7 @@ export default function ProviderProfileForm() {
     profile.avatar,
   ].join("|");
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const values = {
@@ -121,8 +123,18 @@ export default function ProviderProfileForm() {
       avatar: values.avatar.trim(),
     };
 
-    saveProfile(next);
-    setSaved(true);
+    setSaving(true);
+    setSaveError("");
+    try {
+      await saveProfile(next);
+      setSaved(true);
+    } catch (error) {
+      setSaveError(
+        error instanceof Error ? error.message : "Could not save your profile.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -146,10 +158,28 @@ export default function ProviderProfileForm() {
                 Editable details
               </h3>
               <p className="mt-1 text-sm text-muted">
-                These details are saved on this device for your provider portal.
+                These details are saved to your account for your provider portal.
               </p>
             </div>
           </div>
+
+          {loading ? (
+            <p
+              role="status"
+              className="mt-5 rounded-xl border border-line bg-background px-4 py-3 text-sm font-medium text-muted"
+            >
+              Loading your profile…
+            </p>
+          ) : null}
+
+          {error ? (
+            <p
+              role="alert"
+              className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+            >
+              {error}
+            </p>
+          ) : null}
 
           {saved ? (
             <p
@@ -158,6 +188,15 @@ export default function ProviderProfileForm() {
             >
               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
               Profile saved successfully.
+            </p>
+          ) : null}
+
+          {saveError ? (
+            <p
+              role="alert"
+              className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+            >
+              {saveError}
             </p>
           ) : null}
 
@@ -238,9 +277,9 @@ export default function ProviderProfileForm() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Button type="submit">
+              <Button type="submit" disabled={saving}>
                 <Save className="h-4 w-4" aria-hidden="true" />
-                Save changes
+                {saving ? "Saving…" : "Save changes"}
               </Button>
               <p className="text-xs text-muted">
                 Your email address is managed in your sign-in account.

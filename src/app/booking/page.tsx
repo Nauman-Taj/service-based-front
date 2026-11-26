@@ -10,6 +10,9 @@ export const metadata: Metadata = {
     "Choose a trusted local service, send a booking request in minutes and track every step from one place.",
 };
 
+// The catalogue is fetched live from the API, so this route may block on data.
+export const instant = false;
+
 export default async function BookingPage() {
   const services = await getServices();
 

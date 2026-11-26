@@ -1,55 +1,71 @@
 "use client";
 
 import { BadgeCheck, Search, UserCog } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
-import { useAdminServiceOverrides } from "@/components/admin/admin-service-overrides";
 import ProvidersTable from "@/components/admin/ProvidersTable";
 import Avatar from "@/components/common/Avatar";
+import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import DashboardIntro from "@/components/common/DashboardIntro";
 import EmptyState from "@/components/common/EmptyState";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 import Modal from "@/components/common/Modal";
 import Pagination from "@/components/common/Pagination";
 import StarRating from "@/components/common/StarRating";
-import { providers } from "@/data/providers";
+import { useAdminProviders } from "@/hooks/useAdminData";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useAdminStatuses } from "@/hooks/usePortalData";
 import { usePagination } from "@/hooks/usePagination";
 import type { Provider } from "@/types/provider";
 
-/** Provider directory with a working detail modal and status controls. */
+function describeError(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "We could not update this provider. Please try again.";
+}
+
+/** API-backed provider directory with a detail modal and status controls. */
 export default function AdminProvidersView() {
-  const { statuses, setStatus } = useAdminStatuses();
-  const { services } = useAdminServiceOverrides();
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Provider | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const query = useDebounce(search, 250).trim().toLowerCase();
+  const {
+    providers,
+    loading,
+    error,
+    setProviderStatus,
+    setProviderVerification,
+    statuses,
+    serviceCounts,
+  } = useAdminProviders(query);
 
-  const serviceCounts = useMemo(
-    () =>
-      services.reduce<Record<string, number>>((counts, service) => {
-        counts[service.providerId] = (counts[service.providerId] ?? 0) + 1;
-        return counts;
-      }, {}),
-    [services],
+  const selected = providers.find((provider) => provider.id === selectedId) ?? null;
+  const { page, pageItems, totalPages, setPage } = usePagination(
+    providers,
+    6,
   );
 
-  const filtered = useMemo(
-    () =>
-      providers.filter((provider) =>
-        [provider.name, provider.businessName, provider.specialty, provider.location].some(
-          (value) => value.toLowerCase().includes(query),
-        ),
-      ),
-    [query],
-  );
-
-  const { page, pageItems, totalPages, setPage } = usePagination(filtered, 6);
-
-  function toggleStatus(provider: Provider) {
+  async function toggleStatus(provider: Provider) {
     const current = statuses[provider.id] ?? "active";
-    setStatus(provider.id, current === "suspended" ? "active" : "suspended");
+    setActionError(null);
+    try {
+      await setProviderStatus(
+        provider.id,
+        current === "suspended" ? "active" : "suspended",
+      );
+    } catch (requestError) {
+      setActionError(describeError(requestError));
+    }
+  }
+
+  async function toggleVerification(provider: Provider) {
+    setActionError(null);
+    try {
+      await setProviderVerification(provider.id, !provider.verified);
+    } catch (requestError) {
+      setActionError(describeError(requestError));
+    }
   }
 
   return (
@@ -58,6 +74,15 @@ export default function AdminProvidersView() {
         title="Service providers"
         description="Review provider details, performance and marketplace access."
       />
+
+      {error || actionError ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          {actionError ?? error}
+        </p>
+      ) : null}
 
       <section className="rounded-2xl border border-line bg-card shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-4 sm:p-5">
@@ -76,17 +101,23 @@ export default function AdminProvidersView() {
             />
           </div>
           <p className="text-sm text-muted">
-            {filtered.length} {filtered.length === 1 ? "provider" : "providers"}
+            {providers.length} {providers.length === 1 ? "provider" : "providers"}
           </p>
         </div>
 
-        {filtered.length > 0 ? (
+        {loading ? (
+          <div className="p-5">
+            <LoadingSpinner className="py-12" label="Loading providers…" />
+          </div>
+        ) : providers.length > 0 ? (
           <ProvidersTable
             providers={pageItems}
             statuses={statuses}
             serviceCounts={serviceCounts}
-            onView={setSelected}
-            onToggleStatus={toggleStatus}
+            onView={(provider) => setSelectedId(provider.id)}
+            onToggleStatus={(provider) => {
+              void toggleStatus(provider);
+            }}
           />
         ) : (
           <div className="p-5">
@@ -117,7 +148,7 @@ export default function AdminProvidersView() {
 
       <Modal
         open={Boolean(selected)}
-        onClose={() => setSelected(null)}
+        onClose={() => setSelectedId(null)}
         title={selected?.businessName ?? "Provider details"}
         description={selected ? `${selected.name} · ${selected.specialty}` : undefined}
         className="max-w-xl"
@@ -178,6 +209,28 @@ export default function AdminProvidersView() {
               <p className="mt-2 text-sm leading-relaxed text-body">
                 {selected.bio}
               </p>
+            </div>
+
+            {"email" in selected && selected.email ? (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  Contact email
+                </p>
+                <p className="mt-1 text-sm text-heading">{selected.email}</p>
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap justify-end gap-3 border-t border-line pt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  void toggleVerification(selected);
+                }}
+              >
+                <BadgeCheck className="h-4 w-4" aria-hidden="true" />
+                {selected.verified ? "Unverify provider" : "Verify provider"}
+              </Button>
             </div>
           </div>
         ) : null}

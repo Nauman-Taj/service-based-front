@@ -19,7 +19,6 @@ export interface AdminReviewRow {
   date: string;
   verified: boolean;
   status: ReviewStatus;
-  source: "mock" | "local";
 }
 
 interface ReviewsTableProps {
@@ -35,7 +34,7 @@ const statusLabels: Record<ReviewStatus, string> = {
   rejected: "Rejected",
 };
 
-/** Moderation table for mock and locally submitted reviews. */
+/** Moderation table for reviews from the API. */
 export default function ReviewsTable({
   reviews,
   onApprove,
@@ -93,9 +92,6 @@ export default function ReviewsTable({
                 >
                   {statusLabels[review.status]}
                 </Badge>
-                <span className="mt-1.5 block text-xs text-muted">
-                  {review.source === "mock" ? "Marketplace data" : "Local"}
-                </span>
               </td>
               <td className="px-5 py-4">
                 <div className="flex flex-wrap justify-end gap-2">

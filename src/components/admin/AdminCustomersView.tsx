@@ -1,49 +1,55 @@
 "use client";
 
 import { Search, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import UsersTable from "@/components/admin/UsersTable";
 import { ButtonLink } from "@/components/common/Button";
 import DashboardIntro from "@/components/common/DashboardIntro";
 import EmptyState from "@/components/common/EmptyState";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 import Pagination from "@/components/common/Pagination";
-import { customers } from "@/data/customers";
-import { useBookings } from "@/hooks/useBookings";
+import { useAdminCustomers } from "@/hooks/useAdminData";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useAdminStatuses } from "@/hooks/usePortalData";
 import { usePagination } from "@/hooks/usePagination";
 import type { User } from "@/types/user";
 
-/** Searchable customer directory with live booking counts and status control. */
+function describeError(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "We could not update this customer. Please try again.";
+}
+
+/** API-backed customer directory with live booking counts and status control. */
 export default function AdminCustomersView() {
-  const { bookings } = useBookings();
-  const { statuses, setStatus } = useAdminStatuses();
   const [search, setSearch] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
   const query = useDebounce(search, 250).trim().toLowerCase();
+  const {
+    customers,
+    loading,
+    error,
+    setCustomerStatus,
+    bookingCounts,
+    statuses,
+  } = useAdminCustomers(query);
 
-  const bookingCounts = useMemo(() => {
-    return bookings.reduce<Record<string, number>>((counts, booking) => {
-      counts[booking.customerId] = (counts[booking.customerId] ?? 0) + 1;
-      return counts;
-    }, {});
-  }, [bookings]);
-
-  const filtered = useMemo(
-    () =>
-      customers.filter((customer) =>
-        [customer.name, customer.email, customer.phone ?? ""].some((value) =>
-          value.toLowerCase().includes(query),
-        ),
-      ),
-    [query],
+  const { page, pageItems, totalPages, setPage } = usePagination(
+    customers,
+    8,
   );
 
-  const { page, pageItems, totalPages, setPage } = usePagination(filtered, 8);
-
-  function toggleStatus(customer: User) {
+  async function toggleStatus(customer: User) {
     const current = statuses[customer.id] ?? "active";
-    setStatus(customer.id, current === "suspended" ? "active" : "suspended");
+    setActionError(null);
+    try {
+      await setCustomerStatus(
+        customer.id,
+        current === "suspended" ? "active" : "suspended",
+      );
+    } catch (requestError) {
+      setActionError(describeError(requestError));
+    }
   }
 
   return (
@@ -57,6 +63,15 @@ export default function AdminCustomersView() {
           </ButtonLink>
         }
       />
+
+      {error || actionError ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          {actionError ?? error}
+        </p>
+      ) : null}
 
       <section className="rounded-2xl border border-line bg-card shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-4 sm:p-5">
@@ -75,16 +90,25 @@ export default function AdminCustomersView() {
             />
           </div>
           <p className="text-sm text-muted">
-            {filtered.length} {filtered.length === 1 ? "customer" : "customers"}
+            {customers.length} {customers.length === 1 ? "customer" : "customers"}
           </p>
         </div>
 
-        {filtered.length > 0 ? (
+        {loading ? (
+          <div className="p-5">
+            <LoadingSpinner
+              className="py-12"
+              label="Loading customers…"
+            />
+          </div>
+        ) : customers.length > 0 ? (
           <UsersTable
             customers={pageItems}
             bookingCounts={bookingCounts}
             statuses={statuses}
-            onToggleStatus={toggleStatus}
+            onToggleStatus={(customer) => {
+              void toggleStatus(customer);
+            }}
           />
         ) : (
           <div className="p-5">

@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 
-import { useAdminServiceOverrides } from "@/components/admin/admin-service-overrides";
 import AnalyticsChart, {
   type ChartDatum,
 } from "@/components/admin/AnalyticsChart";
@@ -18,8 +17,8 @@ import Button from "@/components/common/Button";
 import DashboardIntro from "@/components/common/DashboardIntro";
 import EmptyState from "@/components/common/EmptyState";
 import StatCard from "@/components/common/StatCard";
+import { useAdminOverview } from "@/hooks/useAdminData";
 import { useBookings } from "@/hooks/useBookings";
-import { useAdminStatuses } from "@/hooks/usePortalData";
 import type { BookingStatus } from "@/types/booking";
 import { bookingStatusMeta } from "@/utils/statusHelpers";
 import { formatCurrency } from "@/utils/formatCurrency";
@@ -60,34 +59,23 @@ interface RankedRow {
   value: number;
 }
 
-/** Platform analytics derived from booking state and local catalogue data. */
+/** API-backed summary with booking-derived charts across Quicker. */
 export default function AdminReportsView() {
   const { bookings } = useBookings();
-  const { services } = useAdminServiceOverrides();
-  const { statuses } = useAdminStatuses();
+  const {
+    overview,
+    loading: overviewLoading,
+    error: overviewError,
+  } = useAdminOverview();
 
   const activeBookings = useMemo(
     () => bookings.filter((booking) => booking.status !== "cancelled"),
     [bookings],
   );
 
-  const summary = useMemo(() => {
-    const revenue = activeBookings.reduce((sum, booking) => sum + booking.price, 0);
-    const completed = bookings.filter(
-      (booking) => booking.status === "completed",
-    ).length;
-    const activeServices = services.filter(
-      (service) => (statuses[service.id] ?? "active") === "active",
-    ).length;
-
-    return {
-      revenue,
-      completed,
-      completionRate:
-        bookings.length > 0 ? Math.round((completed / bookings.length) * 100) : 0,
-      activeServices,
-    };
-  }, [activeBookings, bookings, services, statuses]);
+  const completionRate = overview && overview.totalBookings > 0
+    ? Math.round((overview.completedBookings / overview.totalBookings) * 100)
+    : 0;
 
   const statusData = useMemo<ChartDatum[]>(
     () =>
@@ -218,30 +206,51 @@ export default function AdminReportsView() {
         }
       />
 
+      {overviewLoading ? (
+        <p
+          role="status"
+          className="rounded-xl border border-line bg-card px-4 py-3 text-sm text-muted"
+        >
+          Loading the platform summary…
+        </p>
+      ) : null}
+      {overviewError ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          {overviewError}
+        </p>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Total bookings"
-          value={bookings.length.toString()}
+          value={overview ? overview.totalBookings.toString() : "—"}
           icon={CalendarCheck}
-          hint="Mock and locally created bookings"
+          hint="All bookings in the marketplace"
         />
         <StatCard
           label="Booked value"
-          value={formatCurrency(summary.revenue)}
+          value={overview ? formatCurrency(overview.revenue) : "—"}
           icon={Wallet}
-          hint="Excludes cancelled bookings"
+          hint="Completed bookings"
         />
         <StatCard
           label="Completion rate"
-          value={`${summary.completionRate}%`}
+          value={overview ? `${completionRate}%` : "—"}
           icon={CheckCircle2}
-          hint={`${summary.completed} completed bookings`}
+          hint={
+            overview
+              ? `${overview.completedBookings} completed bookings`
+              : "Completion data unavailable"
+          }
         />
         <StatCard
-          label="Active services"
-          value={summary.activeServices.toString()}
+          label="Services"
+          value={overview ? overview.services.toString() : "—"}
           icon={Wrench}
-          hint={`${services.length} services in the catalogue`}
+          hint="Listed in the catalogue"
         />
       </div>
 

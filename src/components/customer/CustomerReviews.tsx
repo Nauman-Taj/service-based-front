@@ -20,7 +20,6 @@ import Modal from "@/components/common/Modal";
 import Select from "@/components/common/Select";
 import StatCard from "@/components/common/StatCard";
 import Textarea from "@/components/common/Textarea";
-import { reviews as demoReviews } from "@/data/reviews";
 import { getServiceById, services } from "@/data/services";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookings } from "@/hooks/useBookings";
@@ -105,49 +104,25 @@ export default function CustomerReviews() {
   const { user } = useAuth();
   const { profile } = useUserProfile(user?.id);
   const { bookings } = useBookings();
-  const { reviews, addReview, deleteReview } = useDashboardReviews();
+  const { reviews, addReview, updateReview, deleteReview } =
+    useDashboardReviews();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ReviewFormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<ReviewFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<DashboardReviewRecord | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-
-  const userName = (user?.name ?? "").trim().toLowerCase();
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const completedBookings = bookings.filter(
     (booking) =>
       booking.customerId === user?.id && booking.status === "completed",
   );
 
-  // Locally saved reviews are editable; demo reviews are display-only.
-  // Prefer the owner id when present, falling back to legacy author-only records.
-  const localReviews = reviews.filter((review) =>
-    review.userId
-      ? review.userId === user?.id
-      : review.author.trim().toLowerCase() === userName,
-  );
-  const localIds = new Set(localReviews.map((review) => review.id));
-
-  const demoReviewsForUser = demoReviews
-    .filter((review) => review.author.trim().toLowerCase() === userName)
-    .map<DashboardReviewRecord>((review) => ({
-      id: review.id,
-      serviceId: review.serviceId,
-      serviceName: getServiceById(review.serviceId)?.title ?? "Service",
-      author: review.author,
-      location: review.location,
-      rating: review.rating,
-      title: review.title,
-      body: review.body,
-      date: review.date,
-      verified: review.verified,
-      status: "published",
-    }));
-
-  const allReviews = [...localReviews, ...demoReviewsForUser].sort((a, b) =>
+  const allReviews = [...reviews].sort((a, b) =>
     b.date.localeCompare(a.date),
   );
 
@@ -190,6 +165,7 @@ export default function CustomerReviews() {
       target: bookingOptions[0]?.value ?? serviceOptions[0]?.value ?? "",
     });
     setErrors({});
+    setFormError(null);
     setNotice(null);
     setDialogOpen(true);
   }
@@ -205,6 +181,7 @@ export default function CustomerReviews() {
       body: review.body,
     });
     setErrors({});
+    setFormError(null);
     setNotice(null);
     setDialogOpen(true);
   }
@@ -266,38 +243,60 @@ export default function CustomerReviews() {
     }
 
     setSubmitting(true);
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 300));
-    if (editingId) {
-      deleteReview(editingId);
+    setFormError(null);
+    try {
+      if (editingId) {
+        await updateReview(editingId, {
+          rating: form.rating,
+          title: form.title.trim(),
+          body: form.body.trim(),
+        });
+        setNotice("Your review has been updated.");
+      } else {
+        await addReview({
+          userId: user?.id,
+          serviceId,
+          serviceName,
+          bookingId: bookingId || undefined,
+          author: user?.name ?? "Customer",
+          location: profile.location?.trim() || "Multan",
+          rating: form.rating,
+          title: form.title.trim(),
+          body: form.body.trim(),
+          verified,
+        });
+        setNotice("Thanks for sharing your review.");
+      }
+      setDialogOpen(false);
+    } catch (error) {
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "We could not save your review. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
     }
-    addReview({
-      userId: user?.id,
-      serviceId,
-      serviceName,
-      bookingId,
-      author: user?.name ?? "Customer",
-      location: profile.location?.trim() || "Multan",
-      rating: form.rating,
-      title: form.title.trim(),
-      body: form.body.trim(),
-      verified,
-    });
-    setSubmitting(false);
-    setDialogOpen(false);
-    setNotice(
-      editingId
-        ? "Your review has been updated."
-        : "Thanks for sharing your review.",
-    );
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!deleting) {
       return;
     }
-    deleteReview(deleting.id);
-    setNotice("Your review has been deleted.");
-    setDeleting(null);
+    try {
+      await deleteReview(deleting.id);
+      setActionError(null);
+      setNotice("Your review has been deleted.");
+      setDeleting(null);
+    } catch (error) {
+      setNotice(null);
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "We could not delete this review.",
+      );
+      setDeleting(null);
+    }
   }
 
   return (
@@ -345,11 +344,19 @@ export default function CustomerReviews() {
         </div>
       ) : null}
 
+      {actionError ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          {actionError}
+        </p>
+      ) : null}
+
       {allReviews.length > 0 ? (
         <div className="space-y-4">
           {allReviews.map((review) => {
             const meta = statusMeta[review.status];
-            const editable = localIds.has(review.id);
 
             return (
               <article
@@ -393,31 +400,26 @@ export default function CustomerReviews() {
                         Verified booking
                       </Badge>
                     ) : null}
-                    {editable ? null : (
-                      <Badge variant="neutral">Demo review</Badge>
-                    )}
                   </div>
-                  {editable ? (
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEdit(review)}
-                      >
-                        <PenLine className="h-3.5 w-3.5" aria-hidden="true" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeleting(review)}
-                        aria-label={`Delete review: ${review.title}`}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                        Delete
-                      </Button>
-                    </div>
-                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEdit(review)}
+                    >
+                      <PenLine className="h-3.5 w-3.5" aria-hidden="true" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleting(review)}
+                      aria-label={`Delete review: ${review.title}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               </article>
             );
@@ -517,6 +519,11 @@ export default function CustomerReviews() {
           />
 
           <div className="flex flex-wrap justify-end gap-3 border-t border-line pt-4">
+            {formError ? (
+              <p role="alert" className="w-full text-sm text-red-600">
+                {formError}
+              </p>
+            ) : null}
             <Button
               variant="ghost"
               onClick={() => setDialogOpen(false)}

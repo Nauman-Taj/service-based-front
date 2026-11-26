@@ -11,6 +11,10 @@ import {
   getServicesByCategory,
 } from "@/lib/public-api";
 
+// Metadata and page data are fetched live from the API, so navigations into
+// this route may block. Opt out of instant-navigation validation.
+export const instant = false;
+
 export async function generateStaticParams() {
   const services = await getServices();
   return services.map((service) => ({ serviceId: service.id }));

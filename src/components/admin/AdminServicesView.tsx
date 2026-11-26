@@ -9,23 +9,35 @@ import Button, { ButtonLink } from "@/components/common/Button";
 import DashboardIntro from "@/components/common/DashboardIntro";
 import { labelClasses } from "@/components/common/Input";
 import EmptyState from "@/components/common/EmptyState";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 import Pagination from "@/components/common/Pagination";
 import Select from "@/components/common/Select";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useAdminStatuses } from "@/hooks/usePortalData";
 import { usePagination } from "@/hooks/usePagination";
 import type { AdminEntityStatus } from "@/types/dashboard";
 import type { Service } from "@/types/service";
 
 type StatusFilter = "all" | AdminEntityStatus;
 
-/** Searchable and filterable admin service catalogue. */
+function describeError(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "We could not update this service. Please try again.";
+}
+
+/** Searchable and filterable API-backed admin service catalogue. */
 export default function AdminServicesView() {
-  const { services } = useAdminServiceOverrides();
-  const { statuses, setStatus } = useAdminStatuses();
+  const {
+    services,
+    statuses,
+    loading,
+    error,
+    setServiceStatus,
+  } = useAdminServiceOverrides();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [actionError, setActionError] = useState<string | null>(null);
   const query = useDebounce(search, 250).trim().toLowerCase();
 
   const categories = useMemo(
@@ -66,9 +78,17 @@ export default function AdminServicesView() {
     setStatusFilter("all");
   }
 
-  function toggleStatus(service: Service) {
+  async function toggleStatus(service: Service) {
     const current = statuses[service.id] ?? "active";
-    setStatus(service.id, current === "suspended" ? "active" : "suspended");
+    setActionError(null);
+    try {
+      await setServiceStatus(
+        service.id,
+        current === "suspended" ? "active" : "suspended",
+      );
+    } catch (requestError) {
+      setActionError(describeError(requestError));
+    }
   }
 
   return (
@@ -82,6 +102,15 @@ export default function AdminServicesView() {
           </ButtonLink>
         }
       />
+
+      {error || actionError ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          {actionError ?? error}
+        </p>
+      ) : null}
 
       <section className="rounded-2xl border border-line bg-card shadow-sm">
         <div className="grid gap-3 border-b border-line p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_12rem_12rem]">
@@ -144,11 +173,17 @@ export default function AdminServicesView() {
           )}
         </div>
 
-        {filtered.length > 0 ? (
+        {loading ? (
+          <div className="p-5">
+            <LoadingSpinner className="py-12" label="Loading services…" />
+          </div>
+        ) : filtered.length > 0 ? (
           <ServicesTable
             services={pageItems}
             statuses={statuses}
-            onToggleStatus={toggleStatus}
+            onToggleStatus={(service) => {
+              void toggleStatus(service);
+            }}
           />
         ) : (
           <div className="p-5">

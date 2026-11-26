@@ -12,6 +12,7 @@ import ConfirmDialog from "@/components/common/ConfirmDialog";
 import DashboardIntro from "@/components/common/DashboardIntro";
 import EmptyState from "@/components/common/EmptyState";
 import { labelClasses } from "@/components/common/Input";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 import Pagination from "@/components/common/Pagination";
 import Select from "@/components/common/Select";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -20,9 +21,17 @@ import type { ReviewStatus } from "@/types/dashboard";
 
 type StatusFilter = "all" | ReviewStatus;
 
-/** Review moderation queue combining mock and locally submitted reviews. */
+function describeError(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "We could not update this review. Please try again.";
+}
+
+/** API-backed review moderation queue. */
 export default function AdminReviewsView() {
-  const { rows, setStatus, deleteRow } = useAdminReviewModeration();
+  const { rows, loading, error, setStatus, deleteRow } =
+    useAdminReviewModeration();
+  const [actionError, setActionError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [service, setService] = useState("all");
   const [rating, setRating] = useState("all");
@@ -74,10 +83,35 @@ export default function AdminReviewsView() {
     setStatusFilter("all");
   }
 
-  function handleDelete() {
-    if (pendingDelete) {
-      deleteRow(pendingDelete);
-      setPendingDelete(null);
+  async function handleApprove(row: AdminReviewRow) {
+    try {
+      await setStatus(row, "published");
+      setActionError(null);
+    } catch (error) {
+      setActionError(describeError(error));
+    }
+  }
+
+  async function handleReject(row: AdminReviewRow) {
+    try {
+      await setStatus(row, "rejected");
+      setActionError(null);
+    } catch (error) {
+      setActionError(describeError(error));
+    }
+  }
+
+  async function handleDelete() {
+    if (!pendingDelete) {
+      return;
+    }
+    const row = pendingDelete;
+    setPendingDelete(null);
+    try {
+      await deleteRow(row);
+      setActionError(null);
+    } catch (error) {
+      setActionError(describeError(error));
     }
   }
 
@@ -94,6 +128,15 @@ export default function AdminReviewsView() {
           </div>
         }
       />
+
+      {error || actionError ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          {actionError ?? error}
+        </p>
+      ) : null}
 
       <section className="rounded-2xl border border-line bg-card shadow-sm">
         <div className="grid gap-3 border-b border-line p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_12rem_8rem_10rem]">
@@ -173,11 +216,13 @@ export default function AdminReviewsView() {
           )}
         </div>
 
-        {filtered.length > 0 ? (
+        {loading ? (
+          <LoadingSpinner label="Loading reviews…" />
+        ) : filtered.length > 0 ? (
           <ReviewsTable
             reviews={pageItems}
-            onApprove={(row) => setStatus(row, "published")}
-            onReject={(row) => setStatus(row, "rejected")}
+            onApprove={(row) => void handleApprove(row)}
+            onReject={(row) => void handleReject(row)}
             onDelete={setPendingDelete}
           />
         ) : (
@@ -210,10 +255,10 @@ export default function AdminReviewsView() {
       <ConfirmDialog
         open={Boolean(pendingDelete)}
         title="Delete this review?"
-        description="The review will be removed from this browser's moderation queue."
+        description="The review will be removed from the marketplace."
         confirmLabel="Delete review"
         destructive
-        onConfirm={handleDelete}
+        onConfirm={() => void handleDelete()}
         onClose={() => setPendingDelete(null)}
       />
     </div>
