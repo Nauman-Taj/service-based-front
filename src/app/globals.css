@@ -20,22 +20,13 @@ body {
   color: var(--color-heading);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1;
 }
 
 /* Tables grow to their natural height; only horizontal overflow scrolls on
    narrow screens. There is deliberately no vertical scroller or sticky header. */
 .table-scroll {
   overflow-x: auto;
-}
-
-/* Shared card-style numeric treatment: the same Geist Sans family used by the
-   dashboard cards, with bold, aligned figures for stats, prices and counts. */
-.numeric {
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  font-variant-numeric: lining-nums tabular-nums;
-  font-feature-settings: "lnum" 1, "tnum" 1;
-  font-weight: 700;
-  letter-spacing: -0.025em;
 }
 
 ::selection {
