@@ -24,7 +24,7 @@ export default function UsersTable({
   onToggleStatus,
 }: UsersTableProps) {
   return (
-    <div className="overflow-x-auto">
+    <div className="table-scroll">
       <table className="w-full min-w-[820px] border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-line bg-background text-xs uppercase tracking-wide text-muted">

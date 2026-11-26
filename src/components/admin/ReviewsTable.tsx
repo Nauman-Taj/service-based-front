@@ -42,7 +42,7 @@ export default function ReviewsTable({
   onDelete,
 }: ReviewsTableProps) {
   return (
-    <div className="overflow-x-auto">
+    <div className="table-scroll">
       <table className="w-full min-w-[860px] border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-line bg-background text-xs uppercase tracking-wide text-muted">

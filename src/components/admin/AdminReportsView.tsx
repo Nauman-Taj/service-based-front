@@ -295,7 +295,7 @@ export default function AdminReportsView() {
         <p className="mt-1 text-sm text-muted">
           Booked value includes all bookings in each status.
         </p>
-        <div className="mt-5 overflow-x-auto">
+        <div className="mt-5 table-scroll">
           <table className="w-full min-w-[520px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-line bg-background text-xs uppercase tracking-wide text-muted">
@@ -341,7 +341,7 @@ function RankedTable({ rows }: { rows: RankedRow[] }) {
   }
 
   return (
-    <div className="mt-5 overflow-x-auto">
+    <div className="mt-5 table-scroll">
       <table className="w-full min-w-[380px] border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-line bg-background text-xs uppercase tracking-wide text-muted">

@@ -150,8 +150,8 @@ export default function ProviderEarnings() {
           </div>
         ) : (
           <>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-left text-sm">
+            <div className="table-scroll hidden md:block">
+              <table className="w-full min-w-[640px] text-left text-sm">
                 <thead className="bg-background text-xs font-semibold uppercase tracking-wide text-muted">
                   <tr>
                     <th scope="col" className="px-6 py-3">Date</th>
