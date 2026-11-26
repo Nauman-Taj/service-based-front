@@ -16,9 +16,9 @@
  * verification belong to the server — the client only decodes claims to check
  * expiry, never to make security decisions.
  *
- * MIGRATION PATH: create `lib/api-auth.ts` implementing `AuthApi` with fetch
- * calls to the NestJS API (Authorization: Bearer <accessToken>, refresh on
- * 401), then switch the single import in `hooks/useAuth.ts`. No UI changes.
+ * MIGRATION STATUS: `lib/api-auth.ts` now implements this contract against the
+ * NestJS API and `hooks/useAuth.tsx` imports it. This file remains an offline
+ * reference/hardcoded demo source; runtime auth does not use it.
  */
 
 import {
@@ -53,7 +53,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   {
     role: "customer",
     label: "Customer",
-    email: "ali@quicker.com",
+    email: "ali@gmail.com",
     password: "customer1122",
   },
   {
@@ -74,7 +74,7 @@ const DEMO_USERS: StoredUser[] = [
   {
     id: "user-cust-1",
     name: "Muhammad Ali",
-    email: "ali@quicker.com",
+    email: "ali@gmail.com",
     role: "customer",
     phone: "0300 1234567",
     createdAt: "2026-08-14T09:00:00.000Z",

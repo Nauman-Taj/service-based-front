@@ -4,14 +4,15 @@ import { notFound } from "next/navigation";
 import ServiceDetails from "@/components/services/ServiceDetails";
 import SiteShell from "@/components/layout/SiteShell";
 import {
-  getServicesByCategory,
+  getProviderById,
+  getReviewsByService,
   getServiceById,
-  services,
-} from "@/data/services";
-import { getProviderById } from "@/data/providers";
-import { getReviewsByService } from "@/data/reviews";
+  getServices,
+  getServicesByCategory,
+} from "@/lib/public-api";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const services = await getServices();
   return services.map((service) => ({ serviceId: service.id }));
 }
 
@@ -19,7 +20,7 @@ export async function generateMetadata({
   params,
 }: PageProps<"/services/[serviceId]">): Promise<Metadata> {
   const { serviceId } = await params;
-  const service = getServiceById(serviceId);
+  const service = await getServiceById(serviceId);
 
   if (!service) {
     return { title: "Service not found" };
@@ -35,15 +36,18 @@ export default async function ServiceDetailPage({
   params,
 }: PageProps<"/services/[serviceId]">) {
   const { serviceId } = await params;
-  const service = getServiceById(serviceId);
+  const service = await getServiceById(serviceId);
 
   if (!service) {
     notFound();
   }
 
-  const provider = getProviderById(service.providerId);
-  const reviews = getReviewsByService(service.id);
-  const relatedServices = getServicesByCategory(service.categorySlug).filter(
+  const [provider, reviews, categoryServices] = await Promise.all([
+    getProviderById(service.providerId),
+    getReviewsByService(service.id),
+    getServicesByCategory(service.categorySlug),
+  ]);
+  const relatedServices = categoryServices.filter(
     (item) => item.id !== service.id,
   );
 

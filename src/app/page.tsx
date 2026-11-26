@@ -10,6 +10,11 @@ import Newsletter from "@/components/home/Newsletter";
 import Testimonials from "@/components/home/Testimonials";
 import WhyChooseUs from "@/components/home/WhyChooseUs";
 import SiteShell from "@/components/layout/SiteShell";
+import {
+  getCategories,
+  getFeaturedServices,
+  getProviders,
+} from "@/lib/public-api";
 
 export const metadata: Metadata = {
   title: { absolute: "Quicker — Trusted Local Services, Booked in Minutes" },
@@ -17,14 +22,20 @@ export const metadata: Metadata = {
     "Compare vetted local professionals for cleaning, plumbing, electrical, painting, gardening and more. Read verified reviews, see upfront prices and book online in minutes.",
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [categories, featuredServices, providers] = await Promise.all([
+    getCategories(),
+    getFeaturedServices(),
+    getProviders(),
+  ]);
+
   return (
     <SiteShell>
       <HeroSection />
-      <CategoriesSection />
-      <FeaturedServices />
+      <CategoriesSection categories={categories} />
+      <FeaturedServices services={featuredServices} />
       <HowItWorks />
-      <FeaturedProviders />
+      <FeaturedProviders providers={providers} />
       <WhyChooseUs />
       <Testimonials />
       <CallToAction />

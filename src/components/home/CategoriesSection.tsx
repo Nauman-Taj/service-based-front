@@ -1,8 +1,14 @@
 import SectionHeading from "@/components/common/SectionHeading";
 import CategoryCard from "@/components/services/CategoryCard";
-import { categories } from "@/data/categories";
+import type { Category } from "@/types/category";
 
-export default function CategoriesSection() {
+interface CategoriesSectionProps {
+  categories: Category[];
+}
+
+export default function CategoriesSection({
+  categories,
+}: CategoriesSectionProps) {
   return (
     <section className="border-y border-line bg-card py-16 sm:py-20">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">

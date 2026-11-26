@@ -1,6 +1,6 @@
-import { categories } from "@/data/categories";
-import { providers } from "@/data/providers";
-import { services } from "@/data/services";
+import type { Category } from "@/types/category";
+import type { Provider } from "@/types/provider";
+import type { Service } from "@/types/service";
 
 export const PRICE_RANGES = [
   { value: "under-10000", label: "Under Rs 10,000" },
@@ -31,6 +31,12 @@ export interface ServiceFilterValues {
 
 type SearchParamValue = string | string[] | undefined;
 
+export interface ServiceFilterCatalog {
+  categories: Pick<Category, "slug">[];
+  providers: Pick<Provider, "id">[];
+  services: Pick<Service, "categorySlug" | "providerId">[];
+}
+
 function first(value: SearchParamValue): string {
   if (Array.isArray(value)) return value[0] ?? "";
   return value ?? "";
@@ -46,6 +52,7 @@ function isSortValue(value: string): value is SortValue {
 
 export function parseServiceFilters(
   params: Record<string, SearchParamValue>,
+  catalog: ServiceFilterCatalog,
 ): ServiceFilterValues {
   const query = first(params.q).trim();
   const category = first(params.category);
@@ -55,14 +62,14 @@ export function parseServiceFilters(
   const view = first(params.view);
 
   const validCategory =
-    categories.some((item) => item.slug === category) &&
-    services.some((service) => service.categorySlug === category)
+    catalog.categories.some((item) => item.slug === category) &&
+    catalog.services.some((service) => service.categorySlug === category)
       ? category
       : "";
 
   const validProvider =
-    providers.some((provider) => provider.id === providerId) &&
-    services.some((service) => service.providerId === providerId)
+    catalog.providers.some((provider) => provider.id === providerId) &&
+    catalog.services.some((service) => service.providerId === providerId)
       ? providerId
       : "";
 

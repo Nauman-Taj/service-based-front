@@ -16,10 +16,10 @@ import EmptyState from "@/components/common/EmptyState";
 import Input from "@/components/common/Input";
 import StarRating from "@/components/common/StarRating";
 import { bookings as mockBookings } from "@/data/bookings";
-import { services } from "@/data/services";
 import { useBookings } from "@/hooks/useBookings";
 import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
+import type { Service } from "@/types/service";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { formatDate } from "@/utils/formatDate";
 import { priceUnitLabels } from "@/utils/priceUnit";
@@ -43,8 +43,12 @@ const steps = [
   },
 ];
 
+interface BookingLandingProps {
+  services: Service[];
+}
+
 /** Public booking hub: explain the flow, pick a service and track requests. */
-export default function BookingLanding() {
+export default function BookingLanding({ services }: BookingLandingProps) {
   const { bookings } = useBookings();
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
@@ -69,7 +73,7 @@ export default function BookingLanding() {
           ),
         ),
       ),
-    [],
+    [services],
   );
 
   const visibleServices = useMemo(() => {
@@ -91,7 +95,7 @@ export default function BookingLanding() {
         .toLowerCase()
         .includes(query);
     });
-  }, [category, debouncedSearch]);
+  }, [category, debouncedSearch, services]);
 
   const matchedBooking = useMemo(() => {
     if (!referenceQuery) {

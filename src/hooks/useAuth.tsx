@@ -5,9 +5,8 @@
  *
  * `AuthProvider` wraps the root layout; `useAuth()` exposes the current user
  * and auth actions. All server communication goes through the `AuthApi`
- * contract — today that is the hardcoded mock (`lib/mock-auth.ts`), later a
- * fetch-based client for the NestJS JWT API. Switching backends means
- * changing the import below, nothing else.
+ * contract — now implemented by `lib/api-auth.ts` against the NestJS API.
+ * Swapping providers only touches that implementation.
  */
 
 import {
@@ -16,14 +15,17 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
-import { authApi, isTokenExpired } from "@/lib/mock-auth";
+import { authApi } from "@/lib/api-auth";
+import { isTokenExpired } from "@/lib/jwt";
 import { clearSession, readSession, writeSession } from "@/lib/storage";
 import type {
   AuthSession,
+  AuthTokens,
   LoginInput,
   RegisterInput,
   User,
@@ -48,6 +50,40 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
+  /**
+   * React StrictMode runs effects twice in development, and two components can
+   * request an access token at the same time. Rotating the refresh token twice
+   * would make the second request fail with 401, so share one in-flight refresh
+   * per refresh token.
+   */
+  const refreshInFlight = useRef<{
+    token: string;
+    promise: Promise<AuthTokens>;
+  } | null>(null);
+
+  const refreshSession = useCallback(
+    async (session: AuthSession): Promise<AuthSession> => {
+      const token = session.tokens.refreshToken;
+      let inFlight = refreshInFlight.current;
+      if (!inFlight || inFlight.token !== token) {
+        inFlight = {
+          token,
+          promise: authApi.refresh(token).finally(() => {
+            if (refreshInFlight.current?.token === token) {
+              refreshInFlight.current = null;
+            }
+          }),
+        };
+        refreshInFlight.current = inFlight;
+      }
+
+      const tokens = await inFlight.promise;
+      const refreshed: AuthSession = { ...session, tokens };
+      writeSession(refreshed);
+      return refreshed;
+    },
+    [],
+  );
 
   /** Restores (and if needed refreshes) the persisted session. */
   const hydrate = useCallback(async () => {
@@ -64,12 +100,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Access token expired — try the refresh token, exactly like the future
-    // NestJS flow (POST /auth/refresh).
+    // Access token expired — refresh it exactly like the NestJS flow
+    // (POST /auth/refresh).
     try {
-      const tokens = await authApi.refresh(session.tokens.refreshToken);
-      const refreshed: AuthSession = { ...session, tokens };
-      writeSession(refreshed);
+      const refreshed = await refreshSession(session);
       setUser(refreshed.user);
       setStatus("authenticated");
     } catch {
@@ -77,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setStatus("unauthenticated");
     }
-  }, []);
+  }, [refreshSession]);
 
   useEffect(() => {
     // Hydrating the tab-local session on mount is a sync with an external
@@ -135,16 +169,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return session.tokens.accessToken;
     }
     try {
-      const tokens = await authApi.refresh(session.tokens.refreshToken);
-      writeSession({ ...session, tokens });
-      return tokens.accessToken;
+      const refreshed = await refreshSession(session);
+      return refreshed.tokens.accessToken;
     } catch {
       clearSession();
       setUser(null);
       setStatus("unauthenticated");
       return null;
     }
-  }, []);
+  }, [refreshSession]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

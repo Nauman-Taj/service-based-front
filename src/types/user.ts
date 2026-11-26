@@ -6,8 +6,8 @@
  * - `POST /auth/refresh` -> `AuthTokens`
  * - `GET /auth/me` -> `User`
  *
- * When the real backend arrives, only the `AuthApi` implementation changes
- * (see `lib/mock-auth.ts`); these types and every consumer stay the same.
+ * The real API client lives in `lib/api-auth.ts`; `lib/mock-auth.ts` remains an
+ * offline reference. These types and every consumer stay the same.
  */
 
 export type UserRole = "customer" | "provider" | "admin";
@@ -58,10 +58,9 @@ export interface RegisterInput {
 }
 
 /**
- * The auth endpoint contract. The mock implementation lives in
- * `lib/mock-auth.ts`; a future `lib/api-auth.ts` will implement the same
- * interface with `fetch` calls to the NestJS API (Bearer access token,
- * refresh on 401), so no UI code needs to change.
+ * The auth endpoint contract. `lib/api-auth.ts` implements it with `fetch`
+ * calls to the NestJS API (Bearer access token); `lib/mock-auth.ts` keeps a
+ * hardcoded implementation for offline reference.
  */
 export interface AuthApi {
   /** POST /auth/login */

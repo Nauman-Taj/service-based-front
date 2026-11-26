@@ -13,11 +13,15 @@ import {
 import { ButtonLink } from "@/components/common/Button";
 import SiteShell from "@/components/layout/SiteShell";
 import ServiceGrid from "@/components/services/ServiceGrid";
-import { categories, getCategoryBySlug } from "@/data/categories";
-import { getServicesByCategory } from "@/data/services";
+import {
+  getCategories,
+  getCategoryBySlug,
+  getServices,
+} from "@/lib/public-api";
 import { formatCurrency } from "@/utils/formatCurrency";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const categories = await getCategories();
   return categories.map((category) => ({ category: category.slug }));
 }
 
@@ -25,7 +29,7 @@ export async function generateMetadata({
   params,
 }: PageProps<"/services/category/[category]">): Promise<Metadata> {
   const { category: slug } = await params;
-  const category = getCategoryBySlug(slug);
+  const category = await getCategoryBySlug(slug);
 
   if (!category) {
     return { title: "Category not found" };
@@ -41,24 +45,31 @@ export default async function ServiceCategoryPage({
   params,
 }: PageProps<"/services/category/[category]">) {
   const { category: slug } = await params;
-  const category = getCategoryBySlug(slug);
+  const [category, categories, services] = await Promise.all([
+    getCategoryBySlug(slug),
+    getCategories(),
+    getServices(),
+  ]);
 
   if (!category) {
     notFound();
   }
 
   const Icon = category.icon;
-  const categoryServices = getServicesByCategory(category.slug);
+  const categoryServices = services.filter(
+    (service) => service.categorySlug === category.slug,
+  );
   const otherCategories = categories.filter(
     (item) => item.slug !== category.slug,
   );
 
-  const serviceCounts = new Map(
-    categories.map((item) => [
-      item.slug,
-      getServicesByCategory(item.slug).length,
-    ]),
-  );
+  const serviceCounts = new Map<string, number>();
+  for (const service of services) {
+    serviceCounts.set(
+      service.categorySlug,
+      (serviceCounts.get(service.categorySlug) ?? 0) + 1,
+    );
+  }
 
   const averageRating =
     categoryServices.length > 0

@@ -18,9 +18,6 @@ import {
 import Button from "@/components/common/Button";
 import ServiceFilters from "@/components/services/ServiceFilters";
 import ServiceGrid from "@/components/services/ServiceGrid";
-import { categories } from "@/data/categories";
-import { providers } from "@/data/providers";
-import { services } from "@/data/services";
 import {
   PRICE_RANGES,
   SORT_OPTIONS,
@@ -30,6 +27,9 @@ import {
   type SortValue,
 } from "@/lib/serviceFilters";
 import { cn } from "@/lib/utils";
+import type { Category } from "@/types/category";
+import type { Provider } from "@/types/provider";
+import type { Service } from "@/types/service";
 
 function FilterChip({
   label,
@@ -55,10 +55,16 @@ function FilterChip({
 
 interface ServicesBrowserProps {
   initialFilters: ServiceFilterValues;
+  services: Service[];
+  categories: Array<Pick<Category, "slug" | "name">>;
+  providers: Array<Pick<Provider, "id" | "businessName">>;
 }
 
 export default function ServicesBrowser({
   initialFilters,
+  services,
+  categories,
+  providers,
 }: ServicesBrowserProps) {
   const [query, setQuery] = useState(initialFilters.query);
   const [category, setCategory] = useState(initialFilters.category);

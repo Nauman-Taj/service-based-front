@@ -1,8 +1,14 @@
 import SectionHeading from "@/components/common/SectionHeading";
 import ProviderCard from "@/components/services/ProviderCard";
-import { providers } from "@/data/providers";
+import type { Provider } from "@/types/provider";
 
-export default function FeaturedProviders() {
+interface FeaturedProvidersProps {
+  providers: Provider[];
+}
+
+export default function FeaturedProviders({
+  providers,
+}: FeaturedProvidersProps) {
   const featured = providers.slice(0, 4);
 
   return (
