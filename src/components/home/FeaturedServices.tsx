@@ -19,11 +19,18 @@ export default function FeaturedServices({
           action={{ label: "Browse all services", href: "/services" }}
         />
 
-        <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {services.map((service) => (
-            <ServiceCard key={service.id} service={service} />
-          ))}
-        </div>
+        {services.length === 0 ? (
+          <p className="mt-10 text-center text-sm text-muted">
+            No featured services right now. Browse the full catalogue to see
+            everything available.
+          </p>
+        ) : (
+          <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {services.map((service) => (
+              <ServiceCard key={service.id} service={service} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

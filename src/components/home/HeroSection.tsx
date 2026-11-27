@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import { BadgeCheck, ShieldCheck, Star } from "lucide-react";
 
 import SearchBar from "@/components/common/SearchBar";
+import type { PublicStats } from "@/lib/public-stats";
+
+interface HeroSectionProps {
+  stats: PublicStats;
+}
 
 const popularSearches = [
   { label: "Home cleaning", href: "/services?q=cleaning" },
@@ -16,7 +21,7 @@ const popularSearches = [
 
 const heroImage = "/images/hero/hero-living-room.jpg";
 
-export default function HeroSection() {
+export default function HeroSection({ stats }: HeroSectionProps) {
   const router = useRouter();
 
   function handleSearch(query: string) {
@@ -29,7 +34,7 @@ export default function HeroSection() {
         <div>
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
             <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-            Trusted by 2,000+ homeowners
+            Vetted local professionals
           </span>
 
           <h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight text-heading sm:text-5xl lg:text-[3.4rem] lg:leading-[1.08]">
@@ -69,20 +74,26 @@ export default function HeroSection() {
                   className="h-4 w-4 fill-primary text-primary"
                   aria-hidden="true"
                 />
-                4.9/5
+                {stats.averageRating !== null
+                  ? `${stats.averageRating.toFixed(1)}/5`
+                  : "—"}
               </dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-muted">
                 Vetted providers
               </dt>
-              <dd className="mt-1 text-lg font-bold text-heading">1,800+</dd>
+              <dd className="mt-1 text-lg font-bold text-heading">
+                {stats.vettedProviders.toLocaleString("en-US")}
+              </dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-muted">
-                Bookings completed
+                Customer reviews
               </dt>
-              <dd className="mt-1 text-lg font-bold text-heading">2,400+</dd>
+              <dd className="mt-1 text-lg font-bold text-heading">
+                {stats.publishedReviews.toLocaleString("en-US")}
+              </dd>
             </div>
           </dl>
         </div>

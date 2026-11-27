@@ -12,9 +12,11 @@ import WhyChooseUs from "@/components/home/WhyChooseUs";
 import SiteShell from "@/components/layout/SiteShell";
 import {
   getCategories,
-  getFeaturedServices,
+  getPublishedReviews,
   getProviders,
+  getServices,
 } from "@/lib/public-api";
+import { derivePublicStats } from "@/lib/public-stats";
 
 export const metadata: Metadata = {
   title: { absolute: "Quicker — Trusted Local Services, Booked in Minutes" },
@@ -23,21 +25,25 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [categories, featuredServices, providers] = await Promise.all([
+  const [categories, services, providers, reviews] = await Promise.all([
     getCategories(),
-    getFeaturedServices(),
+    getServices(),
     getProviders(),
+    getPublishedReviews(),
   ]);
+  const stats = derivePublicStats({ providers, reviews, services });
 
   return (
     <SiteShell>
-      <HeroSection />
+      <HeroSection stats={stats} />
       <CategoriesSection categories={categories} />
-      <FeaturedServices services={featuredServices} />
+      <FeaturedServices
+        services={services.filter((service) => service.featured)}
+      />
       <HowItWorks />
       <FeaturedProviders providers={providers} />
       <WhyChooseUs />
-      <Testimonials />
+      <Testimonials reviews={reviews} services={services} stats={stats} />
       <CallToAction />
       <Newsletter />
     </SiteShell>

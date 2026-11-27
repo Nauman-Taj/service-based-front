@@ -9,3 +9,14 @@ export function formatDate(isoDate: string): string {
     year: "numeric",
   }).format(date);
 }
+
+/** Full ISO timestamps (e.g. contact message `createdAt`) for admin tables. */
+export function formatDateTime(isoDateTime: string): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(isoDateTime));
+}

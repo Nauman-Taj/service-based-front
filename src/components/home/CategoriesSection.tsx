@@ -19,11 +19,17 @@ export default function CategoriesSection({
           action={{ label: "View all services", href: "/services" }}
         />
 
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((category) => (
-            <CategoryCard key={category.id} category={category} />
-          ))}
-        </div>
+        {categories.length === 0 ? (
+          <p className="mt-10 text-center text-sm text-muted">
+            Categories will appear here as soon as they are published.
+          </p>
+        ) : (
+          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {categories.map((category) => (
+              <CategoryCard key={category.id} category={category} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -10,6 +10,7 @@ import {
   createReview,
   deleteProviderService,
   deleteReview as deleteReviewRequest,
+  fetchAdminContacts,
   fetchAdminReviews,
   fetchAllReviews,
   fetchAvailability,
@@ -23,10 +24,12 @@ import {
   saveAvailabilityRulesRequest,
   saveProfileRequest,
   saveSettingsRequest,
+  setContactStatusRequest,
   setReviewStatusRequest,
   updateProviderService,
   updateReview as updateReviewRequest,
 } from "@/lib/portal-api";
+import type { ContactMessage, ContactStatus } from "@/types/contact";
 import {
   defaultAccountSettings,
   emptyUserProfile,
@@ -405,6 +408,68 @@ export function useDashboardReviews() {
     setReviewStatus,
     deleteReview,
   };
+}
+
+/** Admin-only inbox over the contact messages stored by the API. */
+export function useAdminContacts() {
+  const { user, status, getAccessToken } = useAuth();
+  const [contacts, setContacts] = useState<ContactMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (status === "loading") {
+      return;
+    }
+    if (!user || user.role !== "admin") {
+      setContacts([]);
+      setLoading(false);
+      return;
+    }
+
+    const token = await getAccessToken();
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const rows = await fetchAdminContacts(token);
+      setContacts(rows);
+      setError(null);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not load contact messages.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [getAccessToken, status, user]);
+
+  useEffect(() => {
+    // The admin session is tab-local, so the request runs after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refresh();
+  }, [refresh]);
+
+  const setStatus = useCallback(
+    async (id: string, nextStatus: ContactStatus) => {
+      const token = await getAccessToken();
+      if (!token) {
+        throw new Error("Sign in again to update contact messages.");
+      }
+      const updated = await setContactStatusRequest(id, nextStatus, token);
+      setContacts((previous) =>
+        previous.map((message) => (message.id === id ? updated : message)),
+      );
+      return updated;
+    },
+    [getAccessToken],
+  );
+
+  return { contacts, loading, error, refresh, setStatus };
 }
 
 export function useProviderServices(providerId: string | undefined) {

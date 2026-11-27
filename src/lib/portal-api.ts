@@ -8,6 +8,7 @@
 
 import { apiRequest } from "@/lib/api";
 import type { Booking, BookingStatus } from "@/types/booking";
+import type { ContactMessage, ContactStatus } from "@/types/contact";
 import type {
   DashboardReviewRecord,
   FavoriteRecord,
@@ -246,6 +247,31 @@ export function setReviewStatusRequest(
       headers: authHeaders(token),
     },
   ).then(toDashboardReview);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Contact inbox                                                               */
+/* -------------------------------------------------------------------------- */
+
+export function fetchAdminContacts(token: string): Promise<ContactMessage[]> {
+  return apiRequest<ContactMessage[]>("/admin/contacts", {
+    headers: authHeaders(token),
+  });
+}
+
+export function setContactStatusRequest(
+  id: string,
+  status: ContactStatus,
+  token: string,
+): Promise<ContactMessage> {
+  return apiRequest<ContactMessage>(
+    `/admin/contacts/${encodeURIComponent(id)}/status`,
+    {
+      method: "PATCH",
+      body: { status },
+      headers: authHeaders(token),
+    },
+  );
 }
 
 /* -------------------------------------------------------------------------- */

@@ -5,6 +5,7 @@ import ContactHero from "@/components/contact/ContactHero";
 import SectionHeading from "@/components/common/SectionHeading";
 import ContactForm from "@/components/forms/ContactForm";
 import SiteShell from "@/components/layout/SiteShell";
+import { getContactTopics } from "@/lib/public-api";
 
 export const metadata: Metadata = {
   title: "Contact Us",
@@ -12,7 +13,9 @@ export const metadata: Metadata = {
     "Get in touch with the Quicker team in Multan for booking help, service questions, feedback or provider enquiries.",
 };
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const topics = await getContactTopics();
+
   return (
     <SiteShell>
       <ContactHero />
@@ -26,7 +29,7 @@ export default function ContactPage() {
               description="Fill in the form and we'll point you in the right direction — whether you need a service recommendation, booking help or answers about working with Quicker."
             />
             <div className="mt-8">
-              <ContactForm />
+              <ContactForm topics={topics} />
             </div>
           </div>
 

@@ -21,11 +21,17 @@ export default function FeaturedProviders({
           action={{ label: "See all services", href: "/services" }}
         />
 
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          {featured.map((provider) => (
-            <ProviderCard key={provider.id} provider={provider} />
-          ))}
-        </div>
+        {featured.length === 0 ? (
+          <p className="mt-10 text-center text-sm text-muted">
+            Provider profiles will appear here as professionals join Quicker.
+          </p>
+        ) : (
+          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            {featured.map((provider) => (
+              <ProviderCard key={provider.id} provider={provider} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
