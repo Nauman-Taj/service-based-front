@@ -6,7 +6,6 @@ import FeaturedProviders from "@/components/home/FeaturedProviders";
 import FeaturedServices from "@/components/home/FeaturedServices";
 import HeroSection from "@/components/home/HeroSection";
 import HowItWorks from "@/components/home/HowItWorks";
-import Newsletter from "@/components/home/Newsletter";
 import Testimonials from "@/components/home/Testimonials";
 import WhyChooseUs from "@/components/home/WhyChooseUs";
 import SiteShell from "@/components/layout/SiteShell";
@@ -45,7 +44,6 @@ export default async function HomePage() {
       <WhyChooseUs />
       <Testimonials reviews={reviews} services={services} stats={stats} />
       <CallToAction />
-      <Newsletter />
     </SiteShell>
   );
 }
