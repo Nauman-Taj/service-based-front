@@ -53,12 +53,11 @@ export default function NavAuthActions({
     };
   }, [open]);
 
-  // Avoid a flash of the wrong actions while the session hydrates.
-  if (status === "loading") {
-    return null;
-  }
-
-  if (!user) {
+  // The session lives in sessionStorage, so it is only known after hydration.
+  // Render the public actions during loading too: the header must never wait
+  // for client-side auth before showing "Sign in" / "Get started". Authenticated
+  // users swap to their menu as soon as the tab-local session is restored.
+  if (status === "loading" || !user) {
     if (variant === "mobile") {
       return (
         <>
