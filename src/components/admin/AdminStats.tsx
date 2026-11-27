@@ -35,23 +35,23 @@ export default function AdminStats() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Bookings"
-          value={overview ? String(overview.totalBookings) : "—"}
+          value={overview ? String(overview.totalBookings) : "0"}
           icon={CalendarCheck}
           hint={overview ? `${overview.activeBookings} currently active` : undefined}
         />
         <StatCard
           label="Customers"
-          value={overview ? String(overview.customers) : "—"}
+          value={overview ? String(overview.customers) : "0"}
           icon={Users}
         />
         <StatCard
           label="Providers"
-          value={overview ? String(overview.providers) : "—"}
+          value={overview ? String(overview.providers) : "0"}
           icon={UserCog}
         />
         <StatCard
           label="Revenue"
-          value={overview ? formatCurrency(overview.revenue) : "—"}
+          value={overview ? formatCurrency(overview.revenue) : "0"}
           icon={Wallet}
           hint="Completed bookings"
         />
